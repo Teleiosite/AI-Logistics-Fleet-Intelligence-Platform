@@ -23,8 +23,9 @@ from app.schemas.company import CompanyCreate
 from app.schemas.dvr import DVRCreate
 from app.schemas.fleet import DriverCreate, TransporterCreate, VehicleCreate
 from app.schemas.fuel import FuelLogCreate
-from app.schemas.invoice import InvoiceCreate
+from app.schemas.invoice import InvoiceCreate, InvoiceUploadText
 from app.schemas.shipment import ShipmentCreate
+from app.services.invoice_ocr import extract_invoice_fields
 
 
 # Companies
@@ -183,6 +184,30 @@ def create_invoice(db: Session, company_id: str, payload: InvoiceCreate) -> Invo
     return entity
 
 
+def create_invoice_from_text(db: Session, company_id: str, payload: InvoiceUploadText) -> Invoice:
+    extracted = extract_invoice_fields(payload.raw_text)
+    invoice = Invoice(
+        company_id=company_id,
+        transporter_id=payload.transporter_id,
+        invoice_number=str(extracted["invoice_number"]),
+        total_amount=Decimal(str(extracted["total_amount"])),
+    )
+    db.add(invoice)
+    db.flush()
+
+    for row in extracted["line_items"]:
+        item = InvoiceLineItem(
+            invoice_id=invoice.id,
+            description=str(row["description"]),
+            amount=Decimal(str(row["amount"])),
+        )
+        db.add(item)
+
+    db.commit()
+    db.refresh(invoice)
+    return invoice
+
+
 def list_invoices(db: Session, company_id: str) -> list[Invoice]:
     return list(db.scalars(select(Invoice).where(Invoice.company_id == company_id)))
 
@@ -215,6 +240,28 @@ def auto_match_invoice(db: Session, company_id: str, invoice_id: str) -> dict[st
     db.add(invoice)
     db.commit()
     return {"matched": matched, "discrepancies": discrepancies}
+
+
+def generate_dispute_memo(db: Session, company_id: str, invoice_id: str) -> str:
+    invoice = db.scalar(select(Invoice).where(Invoice.id == invoice_id, Invoice.company_id == company_id))
+    if not invoice:
+        return "Invoice not found"
+
+    items = list(db.scalars(select(InvoiceLineItem).where(InvoiceLineItem.invoice_id == invoice_id)))
+    disputed = [item for item in items if item.has_discrepancy]
+    lines = [
+        f"Dispute Memo - Invoice {invoice.invoice_number}",
+        f"Company: {company_id}",
+        f"Discrepancy count: {invoice.discrepancy_count}",
+        "",
+    ]
+    for idx, item in enumerate(disputed, start=1):
+        lines.append(f"{idx}. Line item {item.id}: amount={item.amount}, shipment_id={item.shipment_id}")
+
+    if not disputed:
+        lines.append("No discrepancies detected.")
+
+    return "\n".join(lines)
 
 
 # Analytics

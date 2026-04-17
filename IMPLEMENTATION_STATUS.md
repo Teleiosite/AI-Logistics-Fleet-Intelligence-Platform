@@ -1,47 +1,47 @@
 # FleetIQ Implementation Status
 
-This repository now contains a secured backend MVP aligned to the FleetIQ product documentation.
+This repository now contains a cross-stack production scaffold aligned to the FleetIQ product documentation.
 
-## Completed (Backend MVP Scope)
+## Completed
 
-- FastAPI project structure with versioned API (`/api/v1`), CORS middleware, and startup DB bootstrapping.
-- Multi-domain SQLAlchemy models covering core platform entities:
-  - companies, users/auth, vehicles, drivers, transporters
-  - shipments + status timeline logs
-  - fuel issuance logs + anomaly detection
-  - delivery variance reports (DVR)
-  - invoices + invoice line item model
-  - alerts
-- Auth and tenant isolation foundations:
-  - JWT generation + decoding with environment-based secret key
-  - bearer-token auth dependency
-  - role-permission checks via dependency guardrails
-  - company-level data scoping from token claims
-- API coverage for major functional areas from the spec:
-  - auth (`register`, `login`, `me`)
-  - companies
-  - fleet (vehicles, drivers, transporters)
-  - shipments (create/list/status transitions/POD upload/timeline)
-  - fuel logs + anomaly listing
-  - DVR create/list
-  - invoices create/list + auto-match endpoint
-  - analytics (`shipment` KPI summary)
-  - AI copilot scaffold endpoint
-  - notifications scaffold endpoint
-- Business-rule implementation:
-  - shipment state transition guardrail matrix
-  - vehicle+driver assignment required before `dispatched`
-  - POD required before transition to `delivered`
-  - shipment status change audit timeline
-  - fuel anomaly rules (excessive fill and frequent fills)
-  - DVR creation auto-flags shipment variance
+### Backend platform
+- FastAPI app with versioned APIs, CORS, and tenant-aware JWT auth.
+- Endpoint-level RBAC policy checks using resource/action permissions.
+- Core logistics domains implemented: companies, fleet, shipments, fuel, DVR, invoices, analytics, notifications, AI.
+- Shipment workflow guardrails:
+  - explicit transition matrix
+  - assignment required before dispatch
+  - POD required before delivery completion
+  - timeline logging
+- Fuel anomaly detection rules:
+  - excessive fill (>110% tank capacity)
+  - frequent fill anomaly (>=2 fills in 24h)
+- Invoice workflow additions:
+  - text-based OCR extraction pipeline
+  - invoice line-item generation
+  - auto-match endpoint
+  - dispute memo generation
 
-## Remaining to Reach Full Production Scope
+### Infrastructure and ops
+- PostgreSQL-first defaults in config and docker-compose.
+- Redis and Celery worker integration for async notifications.
+- Alembic migration framework with baseline initial migration.
 
-1. Alembic migrations and PostgreSQL-first deployment defaults.
-2. Full RBAC matrix mapping to endpoint-level policy objects.
-3. OCR extraction + invoice discrepancy workflow and memo generation.
-4. Celery/Redis async jobs and multi-channel notification integrations.
-5. AI model training/inference pipelines (delay prediction and anomaly models).
-6. Frontend (Next.js) and mobile (Flutter) applications.
-7. Comprehensive test suite (unit/integration/e2e) and coverage targets.
+### AI/ML scaffold
+- Heuristic delay prediction endpoint.
+- Offline model training pipeline stub (`train_delay_model.py`).
+
+### Frontend and mobile scaffolds
+- Next.js dashboard skeleton in `frontend/`.
+- Flutter driver app skeleton in `mobile/`.
+
+### Testing
+- Expanded tests for health, authorization policy, and invoice text extraction.
+
+## Remaining for full production launch
+1. Complete Alembic migrations for every table and remove runtime `create_all` bootstrap.
+2. Implement full OCR via PDF/image ingestion and provider integrations.
+3. Add real notification channels (email/SMS/push) and retry/circuit-breaker policies.
+4. Replace heuristic AI with trained model serving + monitoring.
+5. Build comprehensive frontend features and mobile trip workflows.
+6. Reach >80% backend test coverage with unit/integration/e2e suites.

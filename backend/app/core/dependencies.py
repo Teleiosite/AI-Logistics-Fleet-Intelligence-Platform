@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.authorization import has_permission
 from app.core.security import InvalidTokenError, decode_access_token
 
 bearer_scheme = HTTPBearer(auto_error=True)
@@ -13,17 +14,6 @@ class AuthContext:
     email: str
     company_id: str
     role: str
-
-
-ROLE_PERMISSIONS: dict[str, set[str]] = {
-    "super_admin": {"*"},
-    "company_admin": {"*"},
-    "transport_admin": {"read", "write", "approve"},
-    "logistics_manager": {"read", "write"},
-    "finance_officer": {"read", "write", "approve"},
-    "driver": {"read", "write_own"},
-    "auditor": {"read"},
-}
 
 
 def get_auth_context(
@@ -37,13 +27,20 @@ def get_auth_context(
     return AuthContext(email=payload["sub"], company_id=payload["company_id"], role=payload["role"])
 
 
-def require_permissions(*permissions: str):
+def require_permission(resource: str, action: str):
     def dependency(auth: AuthContext = Depends(get_auth_context)) -> AuthContext:
-        allowed = ROLE_PERMISSIONS.get(auth.role, set())
-        if "*" in allowed:
-            return auth
-        if not set(permissions).issubset(allowed):
+        if not has_permission(auth.role, resource, action):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return auth
 
     return dependency
+
+
+def require_permissions(action: str):
+    """Backward-compatible alias retained for branches still using old dependency names.
+
+    Defaults to the `system` resource to simplify conflict resolution when merging
+    branches that still import `require_permissions("read"|"write")`.
+    """
+
+    return require_permission("system", action)

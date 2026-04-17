@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import AuthContext, require_permissions
+from app.core.dependencies import AuthContext, require_permission
 from app.db.session import get_db
 from app.models.entities import Shipment, ShipmentStatus, ShipmentStatusLog
 from app.schemas.shipment import ShipmentCreate, ShipmentPODUpdate, ShipmentRead, ShipmentStatusUpdate
@@ -32,7 +32,7 @@ VALID_TRANSITIONS: dict[ShipmentStatus, set[ShipmentStatus]] = {
 def create_shipment_endpoint(
     payload: ShipmentCreate,
     db: Session = Depends(get_db),
-    auth: AuthContext = Depends(require_permissions("write")),
+    auth: AuthContext = Depends(require_permission("shipments", "write")),
 ) -> ShipmentRead:
     try:
         entity = create_shipment(db, auth.company_id, payload)
@@ -44,7 +44,7 @@ def create_shipment_endpoint(
 @router.get("", response_model=list[ShipmentRead])
 def list_shipments_endpoint(
     db: Session = Depends(get_db),
-    auth: AuthContext = Depends(require_permissions("read")),
+    auth: AuthContext = Depends(require_permission("shipments", "read")),
 ) -> list[ShipmentRead]:
     return [ShipmentRead.model_validate(shipment) for shipment in list_shipments(db, auth.company_id)]
 
@@ -54,7 +54,7 @@ def update_status(
     shipment_id: str,
     payload: ShipmentStatusUpdate,
     db: Session = Depends(get_db),
-    auth: AuthContext = Depends(require_permissions("write")),
+    auth: AuthContext = Depends(require_permission("shipments", "write")),
 ) -> ShipmentRead:
     shipment = db.scalar(select(Shipment).where(Shipment.id == shipment_id, Shipment.company_id == auth.company_id))
     if not shipment:
@@ -99,7 +99,7 @@ def upload_pod(
     shipment_id: str,
     payload: ShipmentPODUpdate,
     db: Session = Depends(get_db),
-    auth: AuthContext = Depends(require_permissions("write")),
+    auth: AuthContext = Depends(require_permission("shipments", "write")),
 ) -> ShipmentRead:
     shipment = db.scalar(select(Shipment).where(Shipment.id == shipment_id, Shipment.company_id == auth.company_id))
     if not shipment:
@@ -117,7 +117,7 @@ def upload_pod(
 def shipment_timeline(
     shipment_id: str,
     db: Session = Depends(get_db),
-    auth: AuthContext = Depends(require_permissions("read")),
+    auth: AuthContext = Depends(require_permission("shipments", "read")),
 ) -> list[dict[str, str | None]]:
     shipment = db.scalar(select(Shipment).where(Shipment.id == shipment_id, Shipment.company_id == auth.company_id))
     if not shipment:

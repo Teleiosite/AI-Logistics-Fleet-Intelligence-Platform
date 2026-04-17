@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.dependencies import AuthContext, require_permissions
+from app.core.dependencies import AuthContext, require_permission
 from app.db.session import get_db
 from app.schemas.company import CompanyCreate, CompanyRead
 from app.services.crud import create_company, list_companies
@@ -21,7 +21,7 @@ def create_company_endpoint(payload: CompanyCreate, db: Session = Depends(get_db
 
 @router.get("", response_model=list[CompanyRead])
 def list_companies_endpoint(
-    db: Session = Depends(get_db), auth: AuthContext = Depends(require_permissions("read"))
+    db: Session = Depends(get_db), auth: AuthContext = Depends(require_permission("companies", "read"))
 ) -> list[CompanyRead]:
     if auth.role not in {"super_admin", "company_admin"}:
         raise HTTPException(status_code=403, detail="Only admins can list companies")

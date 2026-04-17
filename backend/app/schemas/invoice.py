@@ -9,6 +9,11 @@ class InvoiceCreate(BaseModel):
     total_amount: Decimal
 
 
+class InvoiceUploadText(BaseModel):
+    transporter_id: str | None = None
+    raw_text: str
+
+
 class InvoiceRead(InvoiceCreate):
     id: str
     company_id: str
