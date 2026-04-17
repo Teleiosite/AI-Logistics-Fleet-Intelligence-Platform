@@ -1,3 +1,6 @@
+
+Use this document as a reference to build the platform.
+
 # AI Logistics & Fleet Intelligence Platform
 ## Complete Product Documentation & Technical Specification
 
