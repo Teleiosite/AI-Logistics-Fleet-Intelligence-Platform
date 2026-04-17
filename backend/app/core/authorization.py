@@ -21,6 +21,9 @@ ROLE_POLICY: dict[str, set[Permission]] = {
         Permission("analytics", "read"),
         Permission("notifications", "read"),
         Permission("notifications", "write"),
+        Permission("system", "read"),
+        Permission("system", "write"),
+        Permission("system", "approve"),
     },
     "logistics_manager": {
         Permission("shipments", "read"),
@@ -30,6 +33,7 @@ ROLE_POLICY: dict[str, set[Permission]] = {
         Permission("dvr", "write"),
         Permission("analytics", "read"),
         Permission("notifications", "read"),
+        Permission("system", "read"),
     },
     "finance_officer": {
         Permission("invoices", "read"),
@@ -38,6 +42,7 @@ ROLE_POLICY: dict[str, set[Permission]] = {
         Permission("fuel", "read"),
         Permission("analytics", "read"),
         Permission("notifications", "read"),
+        Permission("system", "read"),
     },
     "driver": {
         Permission("shipments", "read"),
@@ -45,6 +50,7 @@ ROLE_POLICY: dict[str, set[Permission]] = {
         Permission("fuel", "write_own"),
         Permission("dvr", "write_own"),
         Permission("notifications", "read"),
+        Permission("system", "read"),
     },
     "auditor": {
         Permission("shipments", "read"),
@@ -53,6 +59,7 @@ ROLE_POLICY: dict[str, set[Permission]] = {
         Permission("invoices", "read"),
         Permission("analytics", "read"),
         Permission("notifications", "read"),
+        Permission("system", "read"),
     },
 }
 

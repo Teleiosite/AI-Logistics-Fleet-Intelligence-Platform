@@ -34,3 +34,13 @@ def require_permission(resource: str, action: str):
         return auth
 
     return dependency
+
+
+def require_permissions(action: str):
+    """Backward-compatible alias retained for branches still using old dependency names.
+
+    Defaults to the `system` resource to simplify conflict resolution when merging
+    branches that still import `require_permissions("read"|"write")`.
+    """
+
+    return require_permission("system", action)
