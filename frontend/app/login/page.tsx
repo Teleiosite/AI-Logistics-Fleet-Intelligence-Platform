@@ -1,13 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { motion } from "framer-motion";
 import { Truck, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { cn } from "../../lib/utils";
+import { useRouter } from "next/navigation";
+import { login } from "../../lib/api";
+import { setToken } from "../../lib/auth";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+    try {
+      const token = await login(email, password);
+      setToken(token);
+      router.push("/");
+    } catch {
+      setError("Login failed. Check your credentials and backend availability.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-black">
@@ -40,21 +62,14 @@ export default function LoginPage() {
             <p className="text-muted-foreground text-sm">Access your command center</p>
           </div>
 
-          <div className="space-y-4">
-            {/* Email Field */}
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label className="text-xs font-semibold uppercase tracking-wider text-gold-400/80 ml-1">Corporate Email</label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold-400 transition-colors" />
-                <input
-                  type="email"
-                  placeholder="name@company.com"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-gold-500/50 focus:border-gold-500/50 transition-all"
-                />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="name@company.com" className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-gold-500/50 focus:border-gold-500/50 transition-all" />
               </div>
             </div>
-
-            {/* Password Field */}
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gold-400/80">Security Token</label>
@@ -62,31 +77,21 @@ export default function LoginPage() {
               </div>
               <div className="relative group">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-gold-400 transition-colors" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-gold-500/50 focus:border-gold-500/50 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-                >
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-12 text-white placeholder:text-white/20 focus:outline-none focus:ring-1 focus:ring-gold-500/50 focus:border-gold-500/50 transition-all" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-
-            <button className="w-full bg-gradient-to-r from-gold-500 to-gold-700 hover:from-gold-400 hover:to-gold-600 text-black font-bold py-4 rounded-xl shadow-lg shadow-gold-900/20 transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 group">
-              Authorize Access
+            {error && <p className="text-xs text-destructive font-medium">{error}</p>}
+            <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-gold-500 to-gold-700 hover:from-gold-400 hover:to-gold-600 disabled:opacity-60 text-black font-bold py-4 rounded-xl shadow-lg shadow-gold-900/20 transform transition-all active:scale-[0.98] flex items-center justify-center gap-2 group">
+              {isLoading ? "Authorizing..." : "Authorize Access"}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-          </div>
+          </form>
 
           <div className="pt-4 text-center">
-            <p className="text-xs text-white/30">
-              Secured by Enterprise Shield | <span className="text-gold-600/80 font-medium">SSO Available</span>
-            </p>
+            <p className="text-xs text-white/30">Secured by Enterprise Shield | <span className="text-gold-600/80 font-medium">SSO Available</span></p>
           </div>
         </div>
 
