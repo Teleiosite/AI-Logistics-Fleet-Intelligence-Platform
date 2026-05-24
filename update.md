@@ -189,3 +189,8 @@ FleetIQ has a solid cross-stack foundation and clear domain modeling, but curren
 - Added a reusable route guard hook that redirects unauthenticated users to `/login`.
 - Applied auth guard to dashboard, shipments, and analytics pages.
 - Converted analytics page from placeholder-only state to live backend-powered shipment KPI rendering while preserving existing visual style.
+
+### Additional progress (2026-05-24, backend hardening)
+- Added environment-driven CORS origin configuration (`cors_origins`) and removed wildcard `*` origins from runtime middleware configuration.
+- Added `auto_create_tables` setting and gated startup table creation behind config to support migration-first production deployments.
+- Added backend test bootstrap (`backend/tests/conftest.py`) to fix package import path resolution for `app` during pytest discovery.
