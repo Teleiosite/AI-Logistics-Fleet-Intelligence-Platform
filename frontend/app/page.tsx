@@ -1,22 +1,40 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "../components/dashboard/DashboardLayout";
 import { KpiCard } from "../components/dashboard/KpiCard";
-import { 
-  Truck, 
-  Clock, 
-  Fuel, 
-  AlertTriangle, 
-  BarChart3, 
-  Activity,
-  ArrowUpRight
-} from "lucide-react";
+import { Truck, Clock, Fuel, AlertTriangle, BarChart3, Activity, ArrowUpRight } from "lucide-react";
+import { fetchShipmentMetrics, ShipmentMetrics } from "../lib/api";
+import { useRequireAuth } from "../lib/requireAuth";
+
+const DEFAULT_METRICS: ShipmentMetrics = {
+  total_shipments: 0,
+  active_shipments: 0,
+  delayed_shipments: 0,
+  delivered_shipments: 0,
+};
 
 export default function DashboardPage() {
+  const [metrics, setMetrics] = useState<ShipmentMetrics>(DEFAULT_METRICS);
+
+  const token = useRequireAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!token) return;
+    setIsLoading(true);
+    setError("");
+    fetchShipmentMetrics(token).then(setMetrics).catch(() => setError("Unable to load live data.")).finally(() => setIsLoading(false))
+  }, [token]);
+
+  const onTimeRate = metrics.total_shipments
+    ? (((metrics.total_shipments - metrics.delayed_shipments) / metrics.total_shipments) * 100).toFixed(1)
+    : "0.0";
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white italic">Operational Pulse</h1>
@@ -34,40 +52,16 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* KPI Grid */}
+        {isLoading && <p className="text-xs text-white/40">Loading live data...</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <KpiCard 
-            title="Active Shipments" 
-            value="142" 
-            icon={Truck} 
-            trend={{ value: 12, isUp: true }}
-            description="32 scheduled for next hour"
-          />
-          <KpiCard 
-            title="On-Time Rate" 
-            value="94.2%" 
-            icon={Clock} 
-            trend={{ value: 1.4, isUp: true }}
-            description="Industry avg: 88.5%"
-          />
-          <KpiCard 
-            title="Fuel Efficiency" 
-            value="2.8 km/L" 
-            icon={Fuel} 
-            trend={{ value: 4.2, isUp: false }}
-            description="Variance detected on 2 routes"
-          />
-          <KpiCard 
-            title="Open Exceptions" 
-            value="3" 
-            icon={AlertTriangle} 
-            trend={{ value: 2, isUp: true }}
-            className="border-destructive/20"
-            description="1 critical priority"
-          />
+          <KpiCard title="Active Shipments" value={metrics.active_shipments} icon={Truck} description={`Total shipments: ${metrics.total_shipments}`} />
+          <KpiCard title="On-Time Rate" value={`${onTimeRate}%`} icon={Clock} description={`Delayed shipments: ${metrics.delayed_shipments}`} />
+          <KpiCard title="Delivered" value={metrics.delivered_shipments} icon={Fuel} description="Completed deliveries" />
+          <KpiCard title="Open Exceptions" value={metrics.delayed_shipments} icon={AlertTriangle} className="border-destructive/20" description="Delayed / exception shipments" />
         </div>
 
-        {/* Secondary Section - Placeholder for charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 glass-card rounded-3xl p-8 min-h-[400px] flex flex-col items-center justify-center text-center space-y-4">
             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-2">
@@ -75,27 +69,6 @@ export default function DashboardPage() {
             </div>
             <h3 className="text-xl font-bold text-white/40">Shipment Volume Analysis</h3>
             <p className="text-xs text-white/20 max-w-xs uppercase tracking-widest font-bold">Integrating Intelligence Engine Data...</p>
-          </div>
-          
-          <div className="glass-card rounded-3xl p-8 flex flex-col gap-6">
-            <h3 className="text-lg font-bold text-white uppercase tracking-tighter">Fleet Activity</h3>
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-gold-500/20 transition-colors group cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gold-500/10 flex items-center justify-center">
-                      <Truck className="w-5 h-5 text-gold-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-white group-hover:text-gold-400 transition-colors">TRK-4920</p>
-                      <p className="text-[10px] text-white/30">In Transit — Lagos City</p>
-                    </div>
-                  </div>
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 group-hover:shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all" />
-                </div>
-              ))}
-            </div>
-            <button className="text-xs font-bold text-gold-600 hover:text-gold-400 text-center py-2 transition-colors uppercase tracking-widest">View Fleet Monitor</button>
           </div>
         </div>
       </div>
