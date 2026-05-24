@@ -3,11 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.logging import RequestLoggingMiddleware
 from app.db.base import Base
 from app.db.session import engine
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
+app.add_middleware(RequestLoggingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

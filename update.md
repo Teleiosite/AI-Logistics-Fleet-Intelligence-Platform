@@ -209,3 +209,12 @@ FleetIQ has a solid cross-stack foundation and clear domain modeling, but curren
 - Added backend in-memory auth endpoint rate limiting utility and applied it to `/auth/login` and `/auth/register` to reduce brute-force abuse risk.
 - Added configurable auth rate limit settings (`auth_rate_limit_requests`, `auth_rate_limit_window_seconds`) to backend settings for environment-specific tuning.
 - Promoted `httpx` to core backend dependencies in `pyproject.toml` so test-client runtime requirements are part of standard environment setup.
+
+### Additional progress (2026-05-24, production safety baseline)
+- Set `auto_create_tables` default to `false` to align default runtime behavior with migration-first discipline.
+- Added production-mode config validation guardrails:
+  - rejects default secret key,
+  - rejects enabled runtime table auto-create,
+  - requires explicit CORS origins.
+- Added request logging middleware with request ID propagation (`x-request-id`) and per-request duration logging for improved traceability.
+- Added frontend ESLint config file (`.eslintrc.json`) and declared Next-compatible lint dependencies in `package.json` to remove first-run interactive lint configuration.
