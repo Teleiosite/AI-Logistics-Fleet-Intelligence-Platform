@@ -200,3 +200,7 @@ FleetIQ has a solid cross-stack foundation and clear domain modeling, but curren
 - Replaced fuel page dummy ledger with live fuel logs (`/fuel`) and computed summary KPIs from real records.
 - Replaced invoices page dummy rows with real invoice records (`/invoices`).
 - Extended centralized API client with typed fetchers for vehicles, drivers, fuel logs, and invoices.
+
+### Additional progress (2026-05-24, UX hardening for live pages)
+- Added lightweight loading and error feedback states on dashboard, shipments, fleet, fuel, invoices, and analytics pages to improve real-world behavior under slow/failing API responses.
+- Consolidated fleet page data loading to parallel API fetches with shared completion/error handling.

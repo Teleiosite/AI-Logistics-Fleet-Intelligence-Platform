@@ -10,10 +10,14 @@ import { useRequireAuth } from "../../lib/requireAuth";
 export default function FuelPage() {
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
   const token = useRequireAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!token) return;
-    fetchFuelLogs(token).then(setFuelLogs).catch(() => undefined);
+    setIsLoading(true);
+    setError("");
+    fetchFuelLogs(token).then(setFuelLogs).catch(() => setError("Unable to load live data.")).finally(() => setIsLoading(false))
   }, [token]);
 
   const stats = useMemo(() => {
@@ -36,6 +40,9 @@ export default function FuelPage() {
           <div className="glass-card p-6 rounded-3xl border border-white/5 bg-gradient-to-br from-black to-grey-900"><div className="flex items-center gap-3 mb-2 text-gold-500"><CreditCard className="w-5 h-5" /><span className="text-xs font-bold uppercase tracking-widest">Aggregate Cost</span></div><p className="text-3xl font-bold text-white tabular-nums">₦{stats.aggregateCost.toLocaleString()} <span className="text-xs text-white/30 tracking-tight">NGN</span></p></div>
           <div className="glass-card p-6 rounded-3xl border border-white/5 bg-destructive/10 border-destructive/20 animate-pulse"><div className="flex items-center gap-3 mb-2 text-destructive"><AlertTriangle className="w-5 h-5" /><span className="text-xs font-bold uppercase tracking-widest">Critical Anomalies</span></div><p className="text-3xl font-bold text-white tabular-nums">{stats.anomalies} <span className="text-xs text-white/30 tracking-tight">Detected</span></p></div>
         </div>
+
+        {isLoading && <p className="text-xs text-white/40">Loading live data...</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <section className="space-y-8">
           <LuxuryTable title="Fuel Issuance Ledger" data={fuelLogs} columns={[

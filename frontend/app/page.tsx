@@ -18,10 +18,14 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState<ShipmentMetrics>(DEFAULT_METRICS);
 
   const token = useRequireAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!token) return;
-    fetchShipmentMetrics(token).then(setMetrics).catch(() => undefined);
+    setIsLoading(true);
+    setError("");
+    fetchShipmentMetrics(token).then(setMetrics).catch(() => setError("Unable to load live data.")).finally(() => setIsLoading(false))
   }, [token]);
 
   const onTimeRate = metrics.total_shipments
@@ -47,6 +51,9 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+
+        {isLoading && <p className="text-xs text-white/40">Loading live data...</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KpiCard title="Active Shipments" value={metrics.active_shipments} icon={Truck} description={`Total shipments: ${metrics.total_shipments}`} />

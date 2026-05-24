@@ -12,10 +12,14 @@ export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
 
   const token = useRequireAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!token) return;
-    fetchShipments(token).then(setShipments).catch(() => undefined);
+    setIsLoading(true);
+    setError("");
+    fetchShipments(token).then(setShipments).catch(() => setError("Unable to load live data.")).finally(() => setIsLoading(false))
   }, [token]);
 
   return (
@@ -27,6 +31,9 @@ export default function ShipmentsPage() {
             <p className="text-muted-foreground text-sm mt-1 font-medium underline decoration-gold-600/30 underline-offset-4">Active logistics lifecycle monitoring and shipment routing</p>
           </div>
         </div>
+
+        {isLoading && <p className="text-xs text-white/40">Loading live data...</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <section className="space-y-8">
           <LuxuryTable

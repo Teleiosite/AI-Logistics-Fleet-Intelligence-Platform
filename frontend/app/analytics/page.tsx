@@ -16,10 +16,14 @@ const DEFAULT_METRICS: ShipmentMetrics = {
 export default function AnalyticsPage() {
   const [metrics, setMetrics] = useState<ShipmentMetrics>(DEFAULT_METRICS);
   const token = useRequireAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!token) return;
-    fetchShipmentMetrics(token).then(setMetrics).catch(() => undefined);
+    setIsLoading(true);
+    setError("");
+    fetchShipmentMetrics(token).then(setMetrics).catch(() => setError("Unable to load live data.")).finally(() => setIsLoading(false))
   }, [token]);
 
   const onTimeRate = metrics.total_shipments

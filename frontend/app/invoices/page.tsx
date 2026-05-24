@@ -11,10 +11,14 @@ import { useRequireAuth } from "../../lib/requireAuth";
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const token = useRequireAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!token) return;
-    fetchInvoices(token).then(setInvoices).catch(() => undefined);
+    setIsLoading(true);
+    setError("");
+    fetchInvoices(token).then(setInvoices).catch(() => setError("Unable to load live data.")).finally(() => setIsLoading(false))
   }, [token]);
 
   return (
@@ -26,6 +30,9 @@ export default function InvoicesPage() {
             <p className="text-muted-foreground text-sm mt-1 font-medium underline decoration-gold-600/30 underline-offset-4">AI-driven invoice matching and transporter payout settlement</p>
           </div>
         </div>
+
+        {isLoading && <p className="text-xs text-white/40">Loading live data...</p>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
 
         <section className="space-y-8">
           <LuxuryTable
