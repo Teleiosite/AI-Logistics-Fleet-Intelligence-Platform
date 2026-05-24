@@ -194,3 +194,9 @@ FleetIQ has a solid cross-stack foundation and clear domain modeling, but curren
 - Added environment-driven CORS origin configuration (`cors_origins`) and removed wildcard `*` origins from runtime middleware configuration.
 - Added `auto_create_tables` setting and gated startup table creation behind config to support migration-first production deployments.
 - Added backend test bootstrap (`backend/tests/conftest.py`) to fix package import path resolution for `app` during pytest discovery.
+
+### Additional progress (2026-05-24, expanded live-data pages)
+- Replaced fleet page dummy datasets with real backend-driven vehicles and drivers (`/vehicles`, `/drivers`).
+- Replaced fuel page dummy ledger with live fuel logs (`/fuel`) and computed summary KPIs from real records.
+- Replaced invoices page dummy rows with real invoice records (`/invoices`).
+- Extended centralized API client with typed fetchers for vehicles, drivers, fuel logs, and invoices.
