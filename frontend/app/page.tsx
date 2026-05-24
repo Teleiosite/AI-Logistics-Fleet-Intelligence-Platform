@@ -5,6 +5,7 @@ import { DashboardLayout } from "../components/dashboard/DashboardLayout";
 import { KpiCard } from "../components/dashboard/KpiCard";
 import { Truck, Clock, Fuel, AlertTriangle, BarChart3, Activity, ArrowUpRight } from "lucide-react";
 import { fetchShipmentMetrics, ShipmentMetrics } from "../lib/api";
+import { useRequireAuth } from "../lib/requireAuth";
 
 const DEFAULT_METRICS: ShipmentMetrics = {
   total_shipments: 0,
@@ -16,11 +17,12 @@ const DEFAULT_METRICS: ShipmentMetrics = {
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<ShipmentMetrics>(DEFAULT_METRICS);
 
+  const token = useRequireAuth();
+
   useEffect(() => {
-    const token = localStorage.getItem("fleetiq_token");
     if (!token) return;
     fetchShipmentMetrics(token).then(setMetrics).catch(() => undefined);
-  }, []);
+  }, [token]);
 
   const onTimeRate = metrics.total_shipments
     ? (((metrics.total_shipments - metrics.delayed_shipments) / metrics.total_shipments) * 100).toFixed(1)

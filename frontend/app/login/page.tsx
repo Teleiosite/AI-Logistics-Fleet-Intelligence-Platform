@@ -6,6 +6,7 @@ import { Truck, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { login } from "../../lib/api";
+import { setToken } from "../../lib/auth";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +22,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const token = await login(email, password);
-      localStorage.setItem("fleetiq_token", token);
+      setToken(token);
       router.push("/");
     } catch {
       setError("Login failed. Check your credentials and backend availability.");

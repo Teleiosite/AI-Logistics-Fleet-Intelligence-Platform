@@ -6,15 +6,17 @@ import { LuxuryTable } from "../../components/ui/luxury-table";
 import { ClipboardList, Navigation2, Clock } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { fetchShipments, Shipment } from "../../lib/api";
+import { useRequireAuth } from "../../lib/requireAuth";
 
 export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
 
+  const token = useRequireAuth();
+
   useEffect(() => {
-    const token = localStorage.getItem("fleetiq_token");
     if (!token) return;
     fetchShipments(token).then(setShipments).catch(() => undefined);
-  }, []);
+  }, [token]);
 
   return (
     <DashboardLayout>

@@ -183,3 +183,9 @@ FleetIQ has a solid cross-stack foundation and clear domain modeling, but curren
 - Add user-facing empty/error/loading states across all integrated pages.
 - Expand live-data integration for fleet, fuel, invoices, notifications, and analytics pages.
 - Complete backend hardening items already listed (migrations, CORS/env security, CI gates, observability).
+
+### Additional progress (2026-05-24)
+- Added reusable frontend auth token utilities (`getToken`, `setToken`, `clearToken`) to centralize credential storage access.
+- Added a reusable route guard hook that redirects unauthenticated users to `/login`.
+- Applied auth guard to dashboard, shipments, and analytics pages.
+- Converted analytics page from placeholder-only state to live backend-powered shipment KPI rendering while preserving existing visual style.
