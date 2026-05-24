@@ -162,3 +162,24 @@ The project should be considered production-ready only when all are true:
 
 ## Final verdict
 FleetIQ has a solid cross-stack foundation and clear domain modeling, but currently remains at **advanced scaffold / pre-production** maturity. The fastest path to production is to first harden engineering and operations (migrations, security, CI reliability), then complete workflow depth in frontend/mobile/AI.
+
+---
+
+## Progress update (2026-05-24)
+
+### Changes completed in this iteration
+- Replaced frontend hardcoded API URL usage with centralized API client functions that support:
+  - auth login,
+  - shipment metrics fetch,
+  - shipment list fetch.
+- Connected login page form to real backend `/auth/login` API and token persistence (`localStorage`).
+- Replaced dashboard KPI dummy values with live metrics from `/analytics/shipments`.
+- Replaced shipments page static dummy list with real shipment records from `/shipments`.
+- Preserved existing frontend visual design language/components while wiring live data.
+
+### Remaining production work
+- Add guarded route handling and token-expiry/logout flow.
+- Move token handling from raw localStorage to a more secure session strategy.
+- Add user-facing empty/error/loading states across all integrated pages.
+- Expand live-data integration for fleet, fuel, invoices, notifications, and analytics pages.
+- Complete backend hardening items already listed (migrations, CORS/env security, CI gates, observability).
