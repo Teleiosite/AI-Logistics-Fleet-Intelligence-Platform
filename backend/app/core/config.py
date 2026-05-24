@@ -21,6 +21,8 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:3000"]
     auto_create_tables: bool = True
+    auth_rate_limit_requests: int = 10
+    auth_rate_limit_window_seconds: int = 60
 
     @field_validator("cors_origins", mode="before")
     @classmethod

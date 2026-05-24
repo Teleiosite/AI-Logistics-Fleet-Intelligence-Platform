@@ -204,3 +204,8 @@ FleetIQ has a solid cross-stack foundation and clear domain modeling, but curren
 ### Additional progress (2026-05-24, UX hardening for live pages)
 - Added lightweight loading and error feedback states on dashboard, shipments, fleet, fuel, invoices, and analytics pages to improve real-world behavior under slow/failing API responses.
 - Consolidated fleet page data loading to parallel API fetches with shared completion/error handling.
+
+### Additional progress (2026-05-24, auth abuse protection and test reliability config)
+- Added backend in-memory auth endpoint rate limiting utility and applied it to `/auth/login` and `/auth/register` to reduce brute-force abuse risk.
+- Added configurable auth rate limit settings (`auth_rate_limit_requests`, `auth_rate_limit_window_seconds`) to backend settings for environment-specific tuning.
+- Promoted `httpx` to core backend dependencies in `pyproject.toml` so test-client runtime requirements are part of standard environment setup.

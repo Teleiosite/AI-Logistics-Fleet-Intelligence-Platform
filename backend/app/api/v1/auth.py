@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.dependencies import AuthContext, get_auth_context
+from app.core.rate_limit import RateLimitRule, get_client_key, rate_limiter
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserContextResponse
@@ -12,7 +14,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
+    settings = get_settings()
+    rate_limiter.check(
+        get_client_key(request, "register"),
+        RateLimitRule(requests=settings.auth_rate_limit_requests, window_seconds=settings.auth_rate_limit_window_seconds),
+    )
     password_hash = hash_password(payload.password)
     try:
         user = create_user(db, payload, password_hash=password_hash)
@@ -24,7 +31,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
+    settings = get_settings()
+    rate_limiter.check(
+        get_client_key(request, "login"),
+        RateLimitRule(requests=settings.auth_rate_limit_requests, window_seconds=settings.auth_rate_limit_window_seconds),
+    )
     user = get_user_by_email(db, payload.email)
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
