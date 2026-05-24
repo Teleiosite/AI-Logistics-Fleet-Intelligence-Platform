@@ -1,134 +1,164 @@
-# FleetIQ Production Readiness Update
+# FleetIQ Code Audit & Production Readiness Report
 
 _Date: 2026-05-24 (UTC)_
 
-## 1) Scope of this review
-This review covered the repository structure, implementation status documents, backend/service scaffolding, and basic verification commands for backend tests and frontend lint workflow.
-
-## 2) Current state: what has been done
-
-### Product and architecture groundwork
-- A complete product strategy/specification exists in `Readme.md`, covering business goals, personas, architecture, feature catalog, AI strategy, and phased roadmap.
-- Multi-surface architecture is present:
-  - **Backend**: FastAPI service with API version routing and domain modules.
-  - **Frontend**: Next.js application with dashboard pages/components.
-  - **Mobile**: Flutter app scaffold.
-  - **Ops**: Docker compose, backend Dockerfile, Alembic migration setup, and Celery task scaffold.
-
-### Backend implementation progress
-- Domain APIs are scaffolded/implemented for key modules (auth, companies, fleet, shipments, fuel, DVR, invoices, analytics, notifications, AI).
-- Startup wiring exists for app bootstrap and routing in `backend/app/main.py`.
-- Database and migration foundations exist via SQLAlchemy and Alembic.
-- Async processing foundations exist via Celery and Redis task plumbing.
-- AI foundations exist for delay prediction and offline training scaffolds.
-
-### QA/Test assets that exist
-- Backend tests are present for:
-  - health endpoint behavior
-  - authorization logic
-  - invoice OCR extraction logic
-- Project dependency declarations include optional dev tools (`pytest`, `httpx`) in backend `pyproject.toml`.
-
-## 3) Validation results from this check
-
-### Executed commands and findings
-1. `cd backend && pytest -q`
-   - **Result**: failed during test collection.
-   - **Primary issues found**:
-     - Python import path issue (`ModuleNotFoundError: No module named 'app'`) in multiple tests.
-     - Missing `httpx` in current environment for `fastapi.testclient`.
-
-2. `cd frontend && npm run -s lint`
-   - **Result**: cannot run non-interactively yet.
-   - **Primary issue found**:
-     - Next.js prompts for first-time ESLint setup instead of running a preconfigured lint check. This blocks CI-style lint execution.
-
-## 4) Gap analysis: what remains before production readiness
-
-## A. Release/engineering hygiene (high priority)
-1. **Lock down reproducible developer/CI environments**
-   - Add explicit setup instructions (or scripts) for backend test env and frontend lint env.
-   - Ensure all required dev/test dependencies are installed in CI by default.
-
-2. **Fix backend test execution baseline**
-   - Resolve import path strategy so tests can import `app` reliably (package/install mode or PYTHONPATH strategy).
-   - Ensure `httpx` is installed in test environment.
-   - Make `pytest -q` pass in a clean environment.
-
-3. **Make frontend lint non-interactive**
-   - Add committed ESLint config for Next.js and verify `npm run lint` runs without prompts.
-
-## B. Backend production hardening (critical)
-4. **Remove runtime schema auto-create for production paths**
-   - Current startup creates schema at app boot; production should rely on controlled migrations only.
-
-5. **Complete migration coverage**
-   - Ensure all domain tables/constraints/indexes are represented via Alembic migrations.
-
-6. **Security hardening**
-   - Tighten CORS policy from wildcard to environment-specific allowlist.
-   - Verify authN/authZ coverage for every protected endpoint.
-   - Add secret management guidance (rotation, no defaults in production).
-
-7. **Observability and SRE readiness**
-   - Add structured logging, correlation IDs, and metrics.
-   - Define health/readiness/liveness distinctions.
-   - Add alerting and runbooks for core failure scenarios.
-
-8. **Background task reliability**
-   - Configure retries/backoff/dead-letter patterns for Celery tasks.
-   - Add idempotency and failure handling for notification workflows.
-
-## C. Product feature completion (major)
-9. **OCR pipeline maturity**
-   - Move from text extraction scaffold to full PDF/image ingestion, provider integrations, and confidence/error handling.
-
-10. **AI model lifecycle**
-   - Replace heuristic delay logic with trained model serving path.
-   - Add model evaluation, versioning, and monitoring.
-
-11. **Frontend/mobile completeness**
-   - Expand current UI scaffolds into complete user workflows (state management, API integration, error handling, auth flows).
-   - Build mobile operational trip lifecycle and offline sync strategy.
-
-## D. Quality and compliance readiness (critical)
-12. **Testing depth**
-   - Expand to robust unit + integration + end-to-end tests across backend/frontend/mobile.
-   - Add contract tests between frontend and API.
-
-13. **Performance and scale testing**
-   - Define performance budgets and run load tests for core routes and worker queues.
-
-14. **Data and compliance controls**
-   - Add backup/restore drills, data retention policy enforcement, audit completeness, and compliance posture documentation.
-
-## 5) Recommended phased path to “production ready”
-
-### Phase 1 (stabilization, 1–2 sprints)
-- Make backend tests pass reliably.
-- Make frontend lint non-interactive and CI-ready.
-- Finalize migration-first DB lifecycle (remove runtime auto-create).
-
-### Phase 2 (hardening, 2–4 sprints)
-- Security, observability, and worker reliability hardening.
-- Broaden automated test coverage and CI gates.
-
-### Phase 3 (feature maturity, 3–6 sprints)
-- Production OCR pipeline and AI model lifecycle.
-- Complete frontend/mobile workflows and operational readiness.
-
-### Phase 4 (launch readiness)
-- Load/perf validation, disaster recovery validation, runbooks/on-call readiness, and pilot rollout checklist.
-
-## 6) Production-readiness exit criteria (suggested)
-- CI pipeline green on tests/lint/type checks with no interactive steps.
-- Database lifecycle fully migration-driven.
-- Core API workflows covered by automated integration tests.
-- Observability dashboards + actionable alerts operational.
-- Security baseline reviewed and signed off.
-- Pilot customer workflow completed end-to-end without manual intervention for standard operations.
+## Audit Objective
+Perform a real code audit (not only scaffold review) and document:
+1. What is implemented in the current repository.
+2. What is missing or risky for production.
+3. A prioritized path to become production ready.
 
 ---
 
-## Quick conclusion
-The project has a strong scaffold and good architectural direction, but it is **not yet production ready**. The immediate blockers are environment reproducibility (tests/lint), migration lifecycle hardening, and operational reliability/security maturity. Once those foundations are complete, feature-level maturation (OCR/AI/mobile workflow depth) is the next major milestone.
+## 1) Audit Coverage
+
+This audit reviewed core code across:
+- Backend API, auth, models, services, tasks, migrations, tests.
+- Frontend app pages/components and API utility layer.
+- Mobile Flutter app scaffold.
+- Deployment/devops scaffolding (`docker-compose`, Dockerfile context references).
+
+Commands used during audit included static file inspection and execution checks for tests/lint.
+
+---
+
+## 2) What is done (implementation status from code)
+
+### A. Backend foundation (implemented)
+- FastAPI app bootstrap and API v1 routing are in place.
+- JWT authentication and RBAC-style permission checks are implemented.
+- Domain models cover company, users, fleet, shipments, fuel logs, DVR, invoices, alerts.
+- CRUD/service flows exist for core domains including shipment creation, fuel anomaly flags, invoice auto-match/dispute memo.
+- Celery app is configured with Redis broker/result backend.
+
+### B. Data layer (partially implemented)
+- SQLAlchemy models are extensive and include many production-domain entities.
+- Alembic exists, but only a minimal initial migration is present (companies/users/vehicles only).
+
+### C. Frontend (mostly scaffold/demo state)
+- Next.js app has polished dashboard UI pages and reusable components.
+- Most feature pages currently use static/mock data rather than full backend-integrated workflows.
+- API helper is minimal and hardcodes local backend URL.
+
+### D. Mobile (early scaffold)
+- Flutter app currently shows a basic placeholder screen with no auth, API client, sync, or workflow logic.
+
+---
+
+## 3) Key findings from code audit
+
+## Critical (P0)
+1. **Database lifecycle conflict**
+   - App startup calls `Base.metadata.create_all(...)` while Alembic is also used.
+   - This creates schema drift risk and uncontrolled DDL in production.
+
+2. **Migration coverage is incomplete**
+   - Current migration only creates 3 tables, while models define many more.
+   - A migration-first production process is not yet possible.
+
+3. **Insecure default/runtime security posture**
+   - CORS allows `*` for origins/methods/headers.
+   - Default secret key is hardcoded placeholder and can be used if env is misconfigured.
+
+4. **Tests are not currently runnable out-of-the-box**
+   - `pytest` fails in current setup due to module import path (`app`) and missing `httpx` availability in runtime env.
+
+## High (P1)
+5. **Frontend lint/quality gate not CI-ready**
+   - `next lint` triggers interactive first-time ESLint setup prompt.
+
+6. **Configuration mismatch between docs/status and code default**
+   - README/status imply PostgreSQL-first; backend config defaults to SQLite.
+   - This can hide production-only DB behavior issues during local dev.
+
+7. **Limited reliability patterns in background tasks**
+   - Celery exists but no explicit retries, backoff, DLQ/circuit patterns shown.
+
+8. **Limited observability foundation**
+   - No evident structured logging standards, request correlation IDs, metrics instrumentation, or alert policy scaffolds.
+
+## Medium (P2)
+9. **Frontend has limited real business workflow implementation**
+   - Multiple pages are UI-rich but data is mocked/static.
+
+10. **Mobile app remains a starter shell**
+   - No production flow (auth, trip sync, offline mode, proofs, telemetry).
+
+11. **AI module is scaffold-level**
+   - Delay prediction + training are present as baseline/stub logic, not full MLOps lifecycle.
+
+---
+
+## 4) Validation checks executed in this audit
+
+1. `cd backend && pytest -q`
+   - Failed during collection:
+     - `ModuleNotFoundError: No module named 'app'`
+     - missing `httpx` required by FastAPI/Starlette test client.
+
+2. `cd frontend && npm run -s lint`
+   - Did not run as CI check because Next.js initiated interactive ESLint setup.
+
+These outcomes confirm the project is not yet ready for strict non-interactive CI gating.
+
+---
+
+## 5) Production-readiness gap matrix
+
+| Area | Current State | Gap | Priority |
+|---|---|---|---|
+| DB schema management | Mixed runtime create + Alembic | Full migration-only lifecycle | P0 |
+| Security baseline | Wildcard CORS, fallback secret | Environment-hardened security config | P0 |
+| Test reliability | Tests exist but fail setup | Green, reproducible test execution | P0 |
+| CI quality gates | Lint not non-interactive | Deterministic lint/type/test pipeline | P1 |
+| Async reliability | Celery baseline only | Retries, idempotency, failure handling | P1 |
+| Observability | Minimal | Logs/metrics/traces/alerts/runbooks | P1 |
+| Frontend workflows | Strong UI scaffold | End-to-end API-backed flows | P2 |
+| Mobile readiness | Placeholder | Real driver workflows + offline sync | P2 |
+| AI readiness | Heuristic/stub | Model serving, monitoring, retraining | P2 |
+
+---
+
+## 6) Concrete work required to be production ready
+
+### Phase 1 — Stabilize engineering baseline (immediate)
+1. Remove runtime schema creation from app startup for production path.
+2. Create complete Alembic migrations for all current models and constraints.
+3. Fix backend test import path/package execution and ensure `httpx` is installed in test environment.
+4. Commit ESLint config and make frontend lint non-interactive.
+5. Add CI pipeline for backend tests + frontend lint/type checks.
+
+### Phase 2 — Security and operations hardening
+6. Lock CORS by environment (explicit allowed origins only).
+7. Enforce secret provisioning (fail-fast if default secret in non-dev).
+8. Add structured logging, request IDs, error taxonomies, and baseline metrics.
+9. Add Celery reliability patterns (retry/backoff/idempotency/dead-letter strategy).
+10. Add health/readiness/liveness separation and operational runbooks.
+
+### Phase 3 — Product completeness
+11. Replace static frontend data with authenticated API-backed state and error handling.
+12. Implement real mobile driver workflows (auth, trips, POD uploads, offline queue/sync).
+13. Upgrade OCR from text parser to full file ingestion/provider pipeline.
+14. Replace heuristic AI logic with trained-model serving and monitoring.
+
+### Phase 4 — Launch readiness
+15. Add integration/e2e/load testing with production-like data volumes.
+16. Validate backup/restore, disaster recovery, and on-call alert response.
+17. Pilot rollout with defined SLOs and incident-response drills.
+
+---
+
+## 7) Recommended production exit criteria
+
+The project should be considered production-ready only when all are true:
+- CI passes non-interactively on fresh environment.
+- All schema changes are migration-driven; no runtime DDL creation in prod.
+- Security baseline enforced (secrets, CORS, authz coverage, auditability).
+- Core workflows validated by integration/e2e suites.
+- Observability and alerting are actionable and tested.
+- Pilot customer operations complete without manual engineering intervention.
+
+---
+
+## Final verdict
+FleetIQ has a solid cross-stack foundation and clear domain modeling, but currently remains at **advanced scaffold / pre-production** maturity. The fastest path to production is to first harden engineering and operations (migrations, security, CI reliability), then complete workflow depth in frontend/mobile/AI.
