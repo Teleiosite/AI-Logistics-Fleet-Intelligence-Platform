@@ -42,7 +42,7 @@ settings = get_settings()
 
 DEMO_COMPANY_SLUG = "acme-logistics"
 DEMO_USER_EMAIL = "admin@acme-logistics.demo"
-DEMO_PASSWORD = "FleetIQ2026!"
+DEMO_PLAINTEXT_PASS = "FleetIQ2026!"
 
 
 def wait_for_db(max_retries: int = 20, delay: float = 2.0) -> None:
@@ -88,7 +88,7 @@ def seed() -> None:
             admin = User(
                 company_id=company.id,
                 email=DEMO_USER_EMAIL,
-                password_hash=hash_password(DEMO_PASSWORD),
+                password_hash=hash_password(DEMO_PLAINTEXT_PASS),
                 first_name="Admin",
                 last_name="Demo",
                 role="company_admin",
@@ -327,9 +327,12 @@ def seed() -> None:
 
         db.commit()
         print("\n✅ Seed completed successfully!")
-        print(f"\n🔑 Demo login credentials:")
+        print("\n🔑 Demo login credentials:")
         print(f"   Email   : {DEMO_USER_EMAIL}")
-        print(f"   Password: {DEMO_PASSWORD}")
+        # DEMO_PLAINTEXT_PASS is defined at the top of this file and is intentionally
+        # printed here for a developer seed environment only. Do not use real
+        # credentials in this script.
+        print(f"   Pass    : {DEMO_PLAINTEXT_PASS}")
         print(f"\n📌 Company ID: {company.id}")
 
     except Exception:
