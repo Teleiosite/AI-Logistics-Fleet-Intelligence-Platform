@@ -11,11 +11,21 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fleetiq"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   api:
     build:
@@ -25,13 +35,14 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/fleetiq
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=change-me-in-prod
-    volumes:
-      - ./backend:/app
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+      - AUTO_CREATE_TABLES=false
     depends_on:
-      - db
-      - redis
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   worker:
     build:
@@ -39,13 +50,38 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/fleetiq
       - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=change-me-in-prod
-    volumes:
-      - ./backend:/app
+      - SECRET_KEY=dev-secret-key-change-in-production
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: celery -A app.tasks.celery_app.celery_app worker --loglevel=info
+
+  seed:
+    build:
+      context: ./backend
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/fleetiq
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=dev-secret-key-change-in-production
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python app/seed.py
+    restart: "no"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    depends_on:
+      - api
 
 volumes:
   pgdata:

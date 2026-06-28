@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel
@@ -20,5 +21,6 @@ class FuelLogRead(BaseModel):
     total_cost: Decimal
     is_anomaly: bool
     anomaly_reason: str | None
+    created_at: datetime
 
     model_config = {"from_attributes": True}
