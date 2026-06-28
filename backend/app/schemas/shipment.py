@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -32,5 +34,6 @@ class ShipmentRead(BaseModel):
     status: str
     proof_of_delivery_url: str | None = None
     delivery_signature_url: str | None = None
+    created_at: datetime
 
     model_config = {"from_attributes": True}

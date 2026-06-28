@@ -37,7 +37,7 @@ def chat(
 def predict_delay(
     payload: DelayPredictionRequest,
     auth: AuthContext = Depends(require_permission("analytics", "read")),
-) -> dict[str, float | int | bool]:
+) -> dict:
     result = heuristic_delay_prediction(DelayPredictionInput(**payload.model_dump()))
     return {
         "company_id": auth.company_id,
