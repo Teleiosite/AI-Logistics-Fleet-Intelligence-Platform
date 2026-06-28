@@ -12,12 +12,14 @@ from app.schemas.fleet import (
     VehicleCreate,
     VehicleRead,
 )
+from app.schemas.user import UserRead
 from app.services.crud import (
     create_driver,
     create_transporter,
     create_vehicle,
     list_drivers,
     list_transporters,
+    list_users,
     list_vehicles,
 )
 
@@ -82,3 +84,13 @@ def list_transporters_endpoint(
     auth: AuthContext = Depends(require_permission("fleet", "read")),
 ) -> list[TransporterRead]:
     return [TransporterRead.model_validate(item) for item in list_transporters(db, auth.company_id)]
+
+
+@router.get("/users", response_model=list[UserRead])
+def list_users_endpoint(
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_permission("companies", "read")),
+) -> list[UserRead]:
+    if auth.role not in {"super_admin", "company_admin"}:
+        raise HTTPException(status_code=403, detail="Admins only")
+    return [UserRead.model_validate(user) for user in list_users(db, auth.company_id)]

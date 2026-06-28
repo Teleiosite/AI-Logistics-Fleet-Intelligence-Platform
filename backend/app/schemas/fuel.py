@@ -10,6 +10,7 @@ class FuelLogCreate(BaseModel):
     quantity_liters: Decimal
     price_per_liter: Decimal
     odometer_reading_km: Decimal | None = None
+    station_name: str | None = None
 
 
 class FuelLogRead(BaseModel):
@@ -19,6 +20,8 @@ class FuelLogRead(BaseModel):
     quantity_liters: Decimal
     price_per_liter: Decimal
     total_cost: Decimal
+    station_name: str | None = None
+    fuel_efficiency_lkm: Decimal | None = None
     is_anomaly: bool
     anomaly_reason: str | None
     created_at: datetime
