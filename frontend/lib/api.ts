@@ -54,6 +54,13 @@ export type ShipmentCreate = {
   reference_number?: string;
 };
 
+export type ShipmentTimelineEntry = {
+  from_status: string | null;
+  to_status: string;
+  notes: string | null;
+  created_at: string;
+};
+
 export type Vehicle = { id: string; vehicle_number: string; license_plate: string; vehicle_type: string; status: string };
 export type Driver = { id: string; first_name: string; last_name: string; license_number: string; status: string };
 
@@ -102,6 +109,16 @@ export type Invoice = {
   status: string;
   discrepancy_count: number;
   created_at: string;
+};
+
+export type InvoiceUploadText = {
+  transporter_id?: string;
+  raw_text: string;
+};
+
+export type InvoiceMatchSummary = {
+  matched: number;
+  discrepancies: number;
 };
 
 export type DVR = {
@@ -220,6 +237,20 @@ export async function createShipment(token: string, payload: ShipmentCreate): Pr
   });
 }
 
+export async function updateShipmentStatus(token: string, shipmentId: string, status: string, notes?: string): Promise<Shipment> {
+  return apiFetch<Shipment>(`/shipments/${shipmentId}/status`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    body: JSON.stringify({ status, notes }),
+  });
+}
+
+export async function fetchShipmentTimeline(token: string, shipmentId: string): Promise<ShipmentTimelineEntry[]> {
+  return apiFetch<ShipmentTimelineEntry[]>(`/shipments/${shipmentId}/timeline`, {
+    headers: { Authorization: "Bearer " + token },
+  });
+}
+
 export async function fetchVehicles(token: string): Promise<Vehicle[]> {
   return apiFetch<Vehicle[]>("/vehicles", { headers: { Authorization: `Bearer ${token}` } });
 }
@@ -248,6 +279,28 @@ export async function fetchFuelPrices(token: string): Promise<FuelPriceEntry[]> 
 
 export async function fetchInvoices(token: string): Promise<Invoice[]> {
   return apiFetch<Invoice[]>("/invoices", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export async function createInvoiceFromText(token: string, payload: InvoiceUploadText): Promise<Invoice> {
+  return apiFetch<Invoice>("/invoices/upload-text", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function autoMatchInvoice(token: string, invoiceId: string): Promise<InvoiceMatchSummary> {
+  return apiFetch<InvoiceMatchSummary>(`/invoices/${invoiceId}/auto-match`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+  });
+}
+
+export async function fetchDisputeMemo(token: string, invoiceId: string): Promise<string> {
+  const response = await apiFetch<{ memo: string }>(`/invoices/${invoiceId}/dispute-memo`, {
+    headers: { Authorization: "Bearer " + token },
+  });
+  return response.memo;
 }
 
 export async function fetchDVRs(token: string): Promise<DVR[]> {

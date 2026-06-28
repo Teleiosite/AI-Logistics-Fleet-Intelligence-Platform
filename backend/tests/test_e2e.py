@@ -709,3 +709,144 @@ def test_fuel_price_history(client: TestClient) -> None:
     assert list_resp.status_code == 200
     prices = list_resp.json()
     assert any(item["id"] == created["id"] for item in prices)
+
+
+def test_dispatch_requires_assignment(client: TestClient) -> None:
+    company_id, _, token = _create_company_and_user(client)
+    auth = {"Authorization": "Bearer " + token}
+
+    shipment_resp = client.post(
+        "/api/v1/shipments",
+        json={
+            "shipment_number": f"SHP-NA-{company_id[:6]}",
+            "customer_name": "No Assignment Customer",
+            "pickup_address": "Lagos",
+            "delivery_address": "Ibadan",
+        },
+        headers=auth,
+    )
+    assert shipment_resp.status_code == 201
+    shipment_id = shipment_resp.json()["id"]
+
+    client.post(
+        f"/api/v1/shipments/{shipment_id}/status",
+        json={"status": "scheduled"},
+        headers=auth,
+    )
+    client.post(
+        f"/api/v1/shipments/{shipment_id}/status",
+        json={"status": "assigned"},
+        headers=auth,
+    )
+
+    resp = client.post(
+        f"/api/v1/shipments/{shipment_id}/status",
+        json={"status": "dispatched"},
+        headers=auth,
+    )
+    assert resp.status_code == 400
+    assert "assigned before dispatch" in resp.text
+
+
+def test_delivery_requires_proof_of_delivery(client: TestClient) -> None:
+    company_id, _, token = _create_company_and_user(client)
+    auth = {"Authorization": "Bearer " + token}
+
+    vehicle_resp = client.post(
+        "/api/v1/vehicles",
+        json={"vehicle_number": "VH-POD", "license_plate": f"POD-{company_id[:4]}", "vehicle_type": "truck"},
+        headers=auth,
+    )
+    driver_resp = client.post(
+        "/api/v1/drivers",
+        json={"first_name": "Proof", "last_name": "Driver", "phone": "+2348000000010", "license_number": f"DRV-POD-{company_id[:5]}"},
+        headers=auth,
+    )
+
+    shipment_resp = client.post(
+        "/api/v1/shipments",
+        json={
+            "shipment_number": f"SHP-POD-{company_id[:5]}",
+            "customer_name": "POD Customer",
+            "pickup_address": "Lagos",
+            "delivery_address": "Kano",
+            "vehicle_id": vehicle_resp.json()["id"],
+            "driver_id": driver_resp.json()["id"],
+        },
+        headers=auth,
+    )
+    shipment_id = shipment_resp.json()["id"]
+
+    for status_name in ("scheduled", "assigned", "dispatched", "en_route_to_pickup", "at_pickup", "loaded", "in_transit", "at_delivery", "unloading"):
+        resp = client.post(
+            f"/api/v1/shipments/{shipment_id}/status",
+            json={"status": status_name},
+            headers=auth,
+        )
+        assert resp.status_code == 200, resp.text
+
+    resp = client.post(
+        f"/api/v1/shipments/{shipment_id}/status",
+        json={"status": "delivered"},
+        headers=auth,
+    )
+    assert resp.status_code == 400
+    assert "Proof of delivery" in resp.text
+
+
+def test_shipment_timeline_is_company_scoped(client: TestClient) -> None:
+    company_id, _, token = _create_company_and_user(client)
+    other_company_id, _, other_token = _create_company_and_user(client)
+    assert company_id != other_company_id
+
+    auth = {"Authorization": "Bearer " + token}
+    other_auth = {"Authorization": "Bearer " + other_token}
+
+    shipment_resp = client.post(
+        "/api/v1/shipments",
+        json={
+            "shipment_number": f"SHP-ISO-{company_id[:6]}",
+            "customer_name": "Scoped Customer",
+            "pickup_address": "Kaduna",
+            "delivery_address": "Jos",
+        },
+        headers=auth,
+    )
+    shipment_id = shipment_resp.json()["id"]
+
+    resp = client.get(f"/api/v1/shipments/{shipment_id}/timeline", headers=other_auth)
+    assert resp.status_code == 404
+
+
+def test_fuel_anomaly_threshold_is_strictly_above_one_hundred_ten_percent(client: TestClient) -> None:
+    company_id, _, token = _create_company_and_user(client)
+    auth = {"Authorization": "Bearer " + token}
+
+    vehicle_resp = client.post(
+        "/api/v1/vehicles",
+        json={
+            "vehicle_number": "VH-THRESH",
+            "license_plate": f"THR-{company_id[:4]}",
+            "vehicle_type": "truck",
+            "tank_capacity_liters": "100.00",
+        },
+        headers=auth,
+    )
+    vehicle_id = vehicle_resp.json()["id"]
+
+    at_threshold = client.post(
+        "/api/v1/fuel",
+        json={"vehicle_id": vehicle_id, "quantity_liters": "110.00", "price_per_liter": "650.00"},
+        headers=auth,
+    )
+    assert at_threshold.status_code == 201
+    assert at_threshold.json()["is_anomaly"] is False
+
+    above_threshold = client.post(
+        "/api/v1/fuel",
+        json={"vehicle_id": vehicle_id, "quantity_liters": "110.10", "price_per_liter": "650.00"},
+        headers=auth,
+    )
+    assert above_threshold.status_code == 201
+    assert above_threshold.json()["is_anomaly"] is True
+    assert "Excessive fill" in above_threshold.json()["anomaly_reason"]

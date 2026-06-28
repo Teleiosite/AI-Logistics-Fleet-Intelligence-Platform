@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { LuxuryTable } from "../../components/ui/luxury-table";
 import { Fuel, AlertTriangle, Droplets, CreditCard, Plus, X, Gauge } from "lucide-react";
-import { fetchFuelLogs, createFuelLog, FuelLog, FuelLogCreate } from "../../lib/api";
+import { createFuelLog, fetchFuelLogs, fetchShipments, fetchVehicles, FuelLog, FuelLogCreate, Shipment, Vehicle } from "../../lib/api";
 import { useRequireAuth } from "../../lib/requireAuth";
 
 const EMPTY_FORM: FuelLogCreate = {
@@ -15,6 +15,8 @@ const EMPTY_FORM: FuelLogCreate = {
 
 export default function FuelPage() {
   const [fuelLogs, setFuelLogs] = useState<FuelLog[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
   const token = useRequireAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +29,12 @@ export default function FuelPage() {
     if (!token) return;
     setIsLoading(true);
     setError("");
-    fetchFuelLogs(token)
-      .then(setFuelLogs)
+    Promise.all([fetchFuelLogs(token), fetchVehicles(token), fetchShipments(token)])
+      .then(([fuelLogData, vehicleData, shipmentData]) => {
+        setFuelLogs(fuelLogData);
+        setVehicles(vehicleData);
+        setShipments(shipmentData);
+      })
       .catch(() => setError("Unable to load live data."))
       .finally(() => setIsLoading(false));
   };
@@ -175,12 +181,10 @@ export default function FuelPage() {
 
             <div className="space-y-4">
               {[
-                { label: "Vehicle ID *", key: "vehicle_id", type: "text", placeholder: "vehicle UUID" },
                 { label: "Quantity (Liters) *", key: "quantity_liters", type: "number", placeholder: "50.00" },
                 { label: "Price per Liter *", key: "price_per_liter", type: "number", placeholder: "650.00" },
                 { label: "Odometer Reading (km)", key: "odometer_reading_km", type: "number", placeholder: "12500" },
                 { label: "Station Name", key: "station_name", type: "text", placeholder: "NNPC Filling Station" },
-                { label: "Shipment ID (optional)", key: "shipment_id", type: "text", placeholder: "shipment UUID" },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key} className="space-y-1">
                   <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
@@ -197,6 +201,38 @@ export default function FuelPage() {
                   />
                 </div>
               ))}
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Vehicle *</label>
+                <select
+                  value={form.vehicle_id}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold-500/30"
+                  onChange={(e) => setForm((current) => ({ ...current, vehicle_id: e.target.value }))}
+                >
+                  <option value="" className="bg-zinc-900">Select a vehicle</option>
+                  {vehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.id} className="bg-zinc-900">
+                      {vehicle.license_plate} · {vehicle.vehicle_number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/40">Shipment (optional)</label>
+                <select
+                  value={form.shipment_id ?? ""}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold-500/30"
+                  onChange={(e) => setForm((current) => ({ ...current, shipment_id: e.target.value || undefined }))}
+                >
+                  <option value="" className="bg-zinc-900">Unlinked fuel issuance</option>
+                  {shipments.map((shipment) => (
+                    <option key={shipment.id} value={shipment.id} className="bg-zinc-900">
+                      {shipment.shipment_number} · {shipment.customer_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {formError && <p className="text-xs text-destructive">{formError}</p>}

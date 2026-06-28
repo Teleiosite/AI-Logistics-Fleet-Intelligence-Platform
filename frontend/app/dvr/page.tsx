@@ -5,7 +5,7 @@ import { DashboardLayout } from "../../components/dashboard/DashboardLayout";
 import { LuxuryTable } from "../../components/ui/luxury-table";
 import { AlertTriangle, FileWarning, CheckCircle2, Plus, X } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { fetchDVRs, createDVR, updateDVRStatus, DVR, DVRCreate } from "../../lib/api";
+import { createDVR, fetchDVRs, fetchShipments, updateDVRStatus, DVR, DVRCreate, Shipment } from "../../lib/api";
 import { useRequireAuth } from "../../lib/requireAuth";
 
 const VARIANCE_TYPES = [
@@ -22,6 +22,7 @@ const SEVERITIES = ["minor", "moderate", "major", "critical"];
 
 export default function DVRPage() {
   const [dvrs, setDvrs] = useState<DVR[]>([]);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -36,8 +37,11 @@ export default function DVRPage() {
     if (!token) return;
     setIsLoading(true);
     setError("");
-    fetchDVRs(token)
-      .then(setDvrs)
+    Promise.all([fetchDVRs(token), fetchShipments(token)])
+      .then(([dvrData, shipmentData]) => {
+        setDvrs(dvrData);
+        setShipments(shipmentData);
+      })
       .catch(() => setError("Unable to load variance reports."))
       .finally(() => setIsLoading(false));
   };
@@ -186,7 +190,6 @@ export default function DVRPage() {
 
               <div className="space-y-4">
                 {[
-                  { label: "Shipment ID *", key: "shipment_id", type: "text", placeholder: "Enter shipment ID" },
                   { label: "Description *", key: "description", type: "textarea", placeholder: "Describe the variance..." },
                   { label: "Financial Impact (optional)", key: "financial_impact", type: "number", placeholder: "0.00" },
                 ].map(({ label, key, type, placeholder }) => (
@@ -211,6 +214,22 @@ export default function DVRPage() {
                     )}
                   </div>
                 ))}
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-widest text-white/40">Shipment *</label>
+                  <select
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-gold-500/30"
+                    value={form.shipment_id ?? ""}
+                    onChange={(e) => setForm((current) => ({ ...current, shipment_id: e.target.value }))}
+                  >
+                    <option value="" className="bg-zinc-900">Select a shipment</option>
+                    {shipments.map((shipment) => (
+                      <option key={shipment.id} value={shipment.id} className="bg-zinc-900">
+                        {shipment.shipment_number} · {shipment.customer_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">

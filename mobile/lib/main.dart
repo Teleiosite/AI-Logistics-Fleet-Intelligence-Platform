@@ -1080,32 +1080,49 @@ class DriverPerformanceScreen extends StatefulWidget {
 
 class _DriverPerformanceScreenState extends State<DriverPerformanceScreen> {
   Map<String, dynamic>? _profile;
+  List<Map<String, dynamic>> _shipments = [];
   bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadPerformance();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadPerformance() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final response = await http.get(
-        Uri.parse('$_apiBase/auth/me'),
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-          'Content-Type': 'application/json',
-        },
-      );
-      if (response.statusCode == 200) {
-        _profile = jsonDecode(response.body) as Map<String, dynamic>;
+      final responses = await Future.wait([
+        http.get(
+          Uri.parse('$_apiBase/auth/me'),
+          headers: {
+            'Authorization': 'Bearer ' + widget.token,
+            'Content-Type': 'application/json',
+          },
+        ),
+        http.get(
+          Uri.parse('$_apiBase/shipments'),
+          headers: {
+            'Authorization': 'Bearer ' + widget.token,
+            'Content-Type': 'application/json',
+          },
+        ),
+      ]);
+      final profileResponse = responses[0];
+      final shipmentsResponse = responses[1];
+
+      if (profileResponse.statusCode == 200) {
+        _profile = jsonDecode(profileResponse.body) as Map<String, dynamic>;
       } else {
         _error = 'Unable to load your profile.';
+      }
+
+      if (shipmentsResponse.statusCode == 200) {
+        _shipments = (jsonDecode(shipmentsResponse.body) as List<dynamic>).cast<Map<String, dynamic>>();
       }
     } catch (_) {
       _error = 'Unable to load your performance details.';
@@ -1126,12 +1143,18 @@ class _DriverPerformanceScreenState extends State<DriverPerformanceScreen> {
       return Center(child: _ErrorCard(message: _error!));
     }
 
-    final name = (_profile?['name'] as String?)?.trim();
+    final firstName = (_profile?['first_name'] as String?)?.trim() ?? '';
+    final lastName = (_profile?['last_name'] as String?)?.trim() ?? '';
+    final name = '$firstName $lastName'.trim();
     final email = _profile?['email'] as String? ?? '-';
     final role = _profile?['role'] as String? ?? 'driver';
+    final activeShipments = _shipments.where((shipment) => shipment['status'] != 'delivered').length;
+    final deliveredShipments = _shipments.where((shipment) => shipment['status'] == 'delivered').length;
+    final varianceFlags = _shipments.where((shipment) => shipment['has_variance'] == true).length;
+    final recentShipments = _shipments.take(3).toList();
 
     return RefreshIndicator(
-      onRefresh: _loadProfile,
+      onRefresh: _loadPerformance,
       color: const Color(0xFFF59E0B),
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -1146,7 +1169,7 @@ class _DriverPerformanceScreenState extends State<DriverPerformanceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name == null || name.isEmpty ? 'FleetIQ Driver' : name,
+                    name.isEmpty ? 'FleetIQ Driver' : name,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -1178,21 +1201,21 @@ class _DriverPerformanceScreenState extends State<DriverPerformanceScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const _PerformanceStatCard(
-            title: 'On-Time Rate',
-            value: 'N/A',
+          _PerformanceStatCard(
+            title: 'Active Shipments',
+            value: '$activeShipments',
             icon: Icons.schedule,
           ),
           const SizedBox(height: 12),
-          const _PerformanceStatCard(
-            title: 'Fuel Efficiency',
-            value: 'N/A',
-            icon: Icons.local_gas_station,
+          _PerformanceStatCard(
+            title: 'Delivered',
+            value: '$deliveredShipments',
+            icon: Icons.local_shipping,
           ),
           const SizedBox(height: 12),
-          const _PerformanceStatCard(
-            title: 'DVR Reports',
-            value: 'N/A',
+          _PerformanceStatCard(
+            title: 'Variance Flags',
+            value: '$varianceFlags',
             icon: Icons.warning_amber,
           ),
           const SizedBox(height: 16),
@@ -1200,11 +1223,68 @@ class _DriverPerformanceScreenState extends State<DriverPerformanceScreen> {
             color: const Color(0xFF111111),
             surfaceTintColor: const Color(0xFFF59E0B),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: const Padding(
-              padding: EdgeInsets.all(18),
-              child: Text(
-                'Detailed driver analytics coming soon',
-                style: TextStyle(color: Colors.white70, fontSize: 15),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Recent Shipment Visibility',
+                    style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  if (recentShipments.isEmpty)
+                    const Text(
+                      'No shipment data is available yet.',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    )
+                  else
+                    ...recentShipments.map(
+                      (shipment) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 4),
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF59E0B),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    (shipment['shipment_number'] as String?) ?? 'Unknown shipment',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    (shipment['customer_name'] as String?) ?? 'Unknown customer',
+                                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _formatLabel((shipment['status'] as String?) ?? 'unknown'),
+                              style: const TextStyle(
+                                color: Color(0xFFFBBF24),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
