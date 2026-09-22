@@ -137,6 +137,24 @@ def test_auth_workflow(client: TestClient) -> None:
     assert me["role"] == "company_admin"
 
 
+def test_users_are_company_scoped_and_system_read_protected(client: TestClient) -> None:
+    company_id, email, token = _create_company_and_user(client)
+    other_company_id, other_email, other_token = _create_company_and_user(client)
+    assert company_id != other_company_id
+
+    response = client.get("/api/v1/users", headers={"Authorization": "Bearer " + token})
+    assert response.status_code == 200
+    assert [user["email"] for user in response.json()] == [email]
+
+    other_response = client.get("/api/v1/users", headers={"Authorization": "Bearer " + other_token})
+    assert other_response.status_code == 200
+    assert [user["email"] for user in other_response.json()] == [other_email]
+
+    _, _, driver_token = _create_company_and_user(client, role="driver")
+    forbidden = client.get("/api/v1/users", headers={"Authorization": "Bearer " + driver_token})
+    assert forbidden.status_code == 403
+
+
 def test_login_invalid_credentials(client: TestClient) -> None:
     resp = client.post("/api/v1/auth/login", json={"email": "no-such@user.com", "password": "wrong"})
     assert resp.status_code == 401
