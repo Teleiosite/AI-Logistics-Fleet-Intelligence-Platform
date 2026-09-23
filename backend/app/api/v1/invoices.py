@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import AuthContext, require_permission
 from app.db.session import get_db
 from app.schemas.invoice import InvoiceCreate, InvoiceRead, InvoiceUploadText
 from app.services.crud import auto_match_invoice, create_invoice, create_invoice_from_text, generate_dispute_memo, list_invoices
+from app.services.invoice_ocr import extract_invoice_document
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
@@ -26,6 +27,28 @@ def upload_invoice_text_endpoint(
     auth: AuthContext = Depends(require_permission("invoices", "write")),
 ) -> InvoiceRead:
     invoice = create_invoice_from_text(db, auth.company_id, payload)
+    return InvoiceRead.model_validate(invoice)
+
+
+@router.post("/upload", response_model=InvoiceRead)
+async def upload_invoice_document_endpoint(
+    file: UploadFile = File(...),
+    transporter_id: str | None = None,
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_permission("invoices", "write")),
+) -> InvoiceRead:
+    if file.content_type not in {"application/pdf", "text/plain"}:
+        raise HTTPException(status_code=415, detail="Only text/plain and text-based PDF invoices are supported")
+    content = await file.read()
+    try:
+        extracted = extract_invoice_document(file.filename or "invoice.txt", content)
+        raw_text = f"Invoice Number: {extracted['invoice_number']}\n" + "\n".join(
+            f"{item['description']} {item['amount']}" for item in extracted["line_items"]
+        )
+        payload = InvoiceUploadText(transporter_id=transporter_id, raw_text=raw_text)
+        invoice = create_invoice_from_text(db, auth.company_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return InvoiceRead.model_validate(invoice)
 
 

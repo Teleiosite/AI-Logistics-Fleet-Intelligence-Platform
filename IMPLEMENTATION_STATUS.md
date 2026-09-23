@@ -1,6 +1,6 @@
 # FleetIQ Implementation Status
 
-This repository now contains a cross-stack production scaffold aligned to the FleetIQ product documentation.
+This repository now contains a cross-stack production baseline aligned to the FleetIQ product documentation.
 
 ## Completed
 
@@ -21,17 +21,23 @@ This repository now contains a cross-stack production scaffold aligned to the Fl
   - invoice line-item generation
   - auto-match endpoint
   - dispute memo generation
+- Production baseline additions:
+  - PDF/text invoice document ingestion
+  - trained delay-model loading with deterministic fallback
+  - readiness and request metrics endpoints
+  - tenant-scoped vehicle location telemetry API
+  - automated backend/frontend CI workflow
 
 ### Infrastructure and ops
 - PostgreSQL-first defaults in config and docker-compose.
 - Redis and Celery worker integration for async notifications.
 - Alembic migration framework with baseline initial migration.
 
-### AI/ML scaffold
-- Heuristic delay prediction endpoint.
-- Offline model training pipeline stub (`train_delay_model.py`).
+### AI/ML
+- Delay prediction endpoint loads a trained model artifact when available.
+- Training pipeline accepts validated historical shipment CSV data.
 
-### Frontend and mobile scaffolds
+### Frontend and mobile
 - Next.js dashboard skeleton in `frontend/`.
 - Flutter driver app skeleton in `mobile/`.
 
@@ -39,9 +45,8 @@ This repository now contains a cross-stack production scaffold aligned to the Fl
 - Expanded tests for health, authorization policy, and invoice text extraction.
 
 ## Remaining for full production launch
-1. Complete Alembic migrations for every table and remove runtime `create_all` bootstrap.
-2. Implement full OCR via PDF/image ingestion and provider integrations.
-3. Add real notification channels (email/SMS/push) and retry/circuit-breaker policies.
-4. Replace heuristic AI with trained model serving + monitoring.
-5. Build comprehensive frontend features and mobile trip workflows.
-6. Reach >80% backend test coverage with unit/integration/e2e suites.
+1. Add image OCR provider integration and model registry/monitoring.
+2. Add persistent geospatial streaming, map tiles, and geofencing.
+3. Add mobile offline queue persistence, background location, and push notifications.
+4. Add distributed metrics/traces, alerting, backups, and deployment promotion workflows.
+5. Reach >80% backend test coverage plus frontend/mobile/load/security suites.

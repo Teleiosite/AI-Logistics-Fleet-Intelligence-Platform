@@ -23,6 +23,7 @@ EXPECTED_TABLES = {
     "transporters",
     "users",
     "vehicles",
+    "vehicle_location_pings",
 }
 
 
