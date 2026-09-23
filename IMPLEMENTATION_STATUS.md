@@ -26,6 +26,8 @@ This repository now contains a cross-stack production baseline aligned to the Fl
   - trained delay-model loading with deterministic fallback
   - readiness and request metrics endpoints
   - tenant-scoped vehicle location telemetry API
+  - persistent geofence event history and tenant-scoped SSE event stream
+  - constrained tenant-scoped analytics copilot with input limits and SQL rejection
   - automated backend/frontend CI workflow
 
 ### Infrastructure and ops
@@ -44,9 +46,10 @@ This repository now contains a cross-stack production baseline aligned to the Fl
 ### Testing
 - Expanded tests for health, authorization policy, and invoice text extraction.
 
-## Remaining for full production launch
-1. Add image OCR provider integration and model registry/monitoring.
-2. Add persistent geospatial streaming, map tiles, and geofencing.
-3. Add mobile offline queue persistence, background location, and push notifications.
-4. Add distributed metrics/traces, alerting, backups, and deployment promotion workflows.
-5. Reach >80% backend test coverage plus frontend/mobile/load/security suites.
+## Remaining for a production launch
+1. Configure and contract-test a real image OCR provider, LLM provider, and model registry.
+2. Add managed map rendering, route/traffic providers, and horizontally scalable event streaming.
+3. Replace the mobile preference queue with SQLite/Drift, background GPS, push delivery, and offline POD/fuel sync.
+4. Add ERP/payment/GPS provider adapters, distributed tracing, centralized logs, alerting, backups, and restore drills.
+5. Add Kubernetes/ECS promotion, migrations, smoke tests, approvals, rollback, and staging-to-production controls.
+6. Reach measured >80% backend coverage plus frontend/mobile/load/security/UAT/DR suites and remediate frontend advisories.
