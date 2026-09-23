@@ -18,6 +18,7 @@ app/api/v1/invoices.py
 app/api/v1/notifications.py
 app/api/v1/router.py
 app/api/v1/shipments.py
+app/api/v1/users.py
 app/core/__init__.py
 app/core/authorization.py
 app/core/config.py
@@ -56,3 +57,4 @@ tests/test_e2e.py
 tests/test_health.py
 tests/test_invoice_ocr.py
 tests/test_migrations.py
+tests/test_notifications.py
