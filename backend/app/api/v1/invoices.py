@@ -5,7 +5,7 @@ from app.core.dependencies import AuthContext, require_permission
 from app.db.session import get_db
 from app.schemas.invoice import InvoiceCreate, InvoiceRead, InvoiceUploadText
 from app.services.crud import auto_match_invoice, create_invoice, create_invoice_from_text, generate_dispute_memo, list_invoices
-from app.services.invoice_ocr import extract_invoice_document
+from app.services.invoice_ocr import extract_invoice_document, extract_invoice_image
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
@@ -37,11 +37,14 @@ async def upload_invoice_document_endpoint(
     db: Session = Depends(get_db),
     auth: AuthContext = Depends(require_permission("invoices", "write")),
 ) -> InvoiceRead:
-    if file.content_type not in {"application/pdf", "text/plain"}:
-        raise HTTPException(status_code=415, detail="Only text/plain and text-based PDF invoices are supported")
+    if file.content_type not in {"application/pdf", "text/plain", "image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=415, detail="Unsupported invoice document type")
     content = await file.read()
     try:
-        extracted = extract_invoice_document(file.filename or "invoice.txt", content)
+        if file.content_type.startswith("image/"):
+            extracted = extract_invoice_image(file.filename or "invoice-image", content)
+        else:
+            extracted = extract_invoice_document(file.filename or "invoice.txt", content)
         raw_text = f"Invoice Number: {extracted['invoice_number']}\n" + "\n".join(
             f"{item['description']} {item['amount']}" for item in extracted["line_items"]
         )

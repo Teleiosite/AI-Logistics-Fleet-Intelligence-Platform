@@ -894,3 +894,21 @@ def test_vehicle_location_is_company_scoped(client: TestClient) -> None:
     assert client.get(f"/api/v1/locations/{vehicle['id']}", headers=auth).status_code == 200
     assert client.get(f"/api/v1/locations/{vehicle['id']}", headers=other_auth).status_code == 200
     assert client.get(f"/api/v1/locations/{vehicle['id']}", headers=other_auth).json() == []
+
+
+def test_geofence_check_is_tenant_scoped(client: TestClient) -> None:
+    company_id, _, token = _create_company_and_user(client)
+    _, _, other_token = _create_company_and_user(client)
+    auth = {"Authorization": "Bearer " + token}
+    created = client.post(
+        "/api/v1/geofences",
+        json={"name": "Lagos Depot", "latitude": 6.5244, "longitude": 3.3792, "radius_meters": 500},
+        headers=auth,
+    )
+    assert created.status_code == 201
+    assert len(client.post(
+        "/api/v1/geofences/check",
+        json={"vehicle_id": "not-needed", "latitude": 6.5245, "longitude": 3.3791},
+        headers=auth,
+    ).json()["matches"]) == 1
+    assert client.get("/api/v1/geofences", headers={"Authorization": "Bearer " + other_token}).json() == []

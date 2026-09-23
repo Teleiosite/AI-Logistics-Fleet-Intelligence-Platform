@@ -7,6 +7,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 const String _apiBase =
     String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000/api/v1');
 const String _tokenKey = 'fleetiq_token';
+const String _offlineQueueKey = 'fleetiq_offline_queue';
+
+class OfflineActionQueue {
+  static Future<void> enqueue(String path, Map<String, dynamic> body) async {
+    final prefs = await SharedPreferences.getInstance();
+    final queued = prefs.getStringList(_offlineQueueKey) ?? <String>[];
+    queued.add(jsonEncode({'path': path, 'body': body}));
+    await prefs.setStringList(_offlineQueueKey, queued);
+  }
+
+  static Future<void> flush(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    final queued = prefs.getStringList(_offlineQueueKey) ?? <String>[];
+    final remaining = <String>[];
+    for (final encoded in queued) {
+      try {
+        final action = jsonDecode(encoded) as Map<String, dynamic>;
+        final response = await http.patch(
+          Uri.parse('$_apiBase${action['path']}'),
+          headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+          body: jsonEncode(action['body']),
+        );
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          remaining.add(encoded);
+        }
+      } catch (_) {
+        remaining.add(encoded);
+      }
+    }
+    await prefs.setStringList(_offlineQueueKey, remaining);
+  }
+}
 
 void main() {
   runApp(const FleetIQDriverApp());
@@ -269,6 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    OfflineActionQueue.flush(widget.token);
   }
 
   Future<void> _loadProfile() async {
@@ -1356,8 +1389,12 @@ class _StatusUpdateDialogState extends State<StatusUpdateDialog> {
         );
       }
     } catch (_) {
+      await OfflineActionQueue.enqueue(
+        '/shipments/${widget.shipmentId}/status',
+        {'status': _selectedStatus},
+      );
       messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to update shipment status.')),
+        const SnackBar(content: Text('Offline: status queued for synchronization.')),
       );
     } finally {
       if (mounted) {

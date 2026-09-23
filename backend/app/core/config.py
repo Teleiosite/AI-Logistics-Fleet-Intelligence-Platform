@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     twilio_account_sid: str | None = None
     twilio_auth_token: str | None = None
     twilio_from_number: str | None = None
+    ocr_provider_url: str | None = None
+    ocr_provider_api_key: str | None = None
+    telematics_webhook_secret: str | None = None
 
     @field_validator("cors_origins", mode="before")
     @classmethod

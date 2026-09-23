@@ -1,5 +1,5 @@
 name: fleetiq_driver_app
-description: FleetIQ Flutter mobile client scaffold
+description: FleetIQ Flutter driver client with offline action synchronization
 publish_to: "none"
 version: 0.1.0+1
 

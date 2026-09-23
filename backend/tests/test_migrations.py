@@ -24,6 +24,7 @@ EXPECTED_TABLES = {
     "users",
     "vehicles",
     "vehicle_location_pings",
+    "geofences",
 }
 
 
