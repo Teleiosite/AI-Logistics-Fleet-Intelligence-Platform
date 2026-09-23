@@ -912,3 +912,10 @@ def test_geofence_check_is_tenant_scoped(client: TestClient) -> None:
         headers=auth,
     ).json()["matches"]) == 1
     assert client.get("/api/v1/geofences", headers={"Authorization": "Bearer " + other_token}).json() == []
+
+
+def test_integration_status_requires_system_access(client: TestClient) -> None:
+    _, _, token = _create_company_and_user(client)
+    response = client.get("/api/v1/integrations/status", headers={"Authorization": "Bearer " + token})
+    assert response.status_code == 200
+    assert {item["name"] for item in response.json()["items"]} >= {"ocr", "telematics", "email", "sms"}

@@ -1,12 +1,21 @@
 import hashlib
 import hmac
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from app.core.config import get_settings
+from app.core.dependencies import AuthContext, require_permission
+from app.integrations import configured_integrations
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
+
+
+@router.get("/status")
+def integration_status(
+    _auth: AuthContext = Depends(require_permission("system", "read")),
+) -> dict[str, list[dict[str, str | bool]]]:
+    return {"items": [status.__dict__ for status in configured_integrations(get_settings())]}
 
 
 class TelematicsLocationEvent(BaseModel):
