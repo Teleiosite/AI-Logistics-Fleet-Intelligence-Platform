@@ -248,3 +248,15 @@ class Geofence(Base):
     longitude: Mapped[Decimal] = mapped_column(Numeric(9, 6), nullable=False)
     radius_meters: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class GeofenceEvent(Base):
+    __tablename__ = "geofence_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    geofence_id: Mapped[str] = mapped_column(String(36), ForeignKey("geofences.id"), nullable=False)
+    vehicle_id: Mapped[str] = mapped_column(String(36), ForeignKey("vehicles.id"), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    distance_meters: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
