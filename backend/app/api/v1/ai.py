@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.ai.delay_prediction import DelayPredictionInput, predict_delay
+from app.ai.delay_prediction import DelayPredictionInput, predict_delay as predict_delay_model
 from app.core.dependencies import AuthContext, require_permission
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -38,7 +38,7 @@ def predict_delay(
     payload: DelayPredictionRequest,
     auth: AuthContext = Depends(require_permission("analytics", "read")),
 ) -> dict:
-    result = predict_delay(DelayPredictionInput(**payload.model_dump()))
+    result = predict_delay_model(DelayPredictionInput(**payload.model_dump()))
     return {
         "company_id": auth.company_id,
         "will_delay": result.will_delay,

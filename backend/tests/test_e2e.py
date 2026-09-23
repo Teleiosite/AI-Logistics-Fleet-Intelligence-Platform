@@ -868,3 +868,29 @@ def test_fuel_anomaly_threshold_is_strictly_above_one_hundred_ten_percent(client
     assert above_threshold.status_code == 201
     assert above_threshold.json()["is_anomaly"] is True
     assert "Excessive fill" in above_threshold.json()["anomaly_reason"]
+
+
+def test_vehicle_location_is_company_scoped(client: TestClient) -> None:
+    company_id, _, token = _create_company_and_user(client)
+    _, _, other_token = _create_company_and_user(client)
+    auth = {"Authorization": "Bearer " + token}
+    other_auth = {"Authorization": "Bearer " + other_token}
+    vehicle = client.post(
+        "/api/v1/vehicles",
+        json={
+            "vehicle_number": "VH-GPS",
+            "license_plate": f"GPS-{company_id[:4]}",
+            "vehicle_type": "truck",
+        },
+        headers=auth,
+    ).json()
+
+    created = client.post(
+        "/api/v1/locations",
+        json={"vehicle_id": vehicle["id"], "latitude": 6.5244, "longitude": 3.3792},
+        headers=auth,
+    )
+    assert created.status_code == 201
+    assert client.get(f"/api/v1/locations/{vehicle['id']}", headers=auth).status_code == 200
+    assert client.get(f"/api/v1/locations/{vehicle['id']}", headers=other_auth).status_code == 200
+    assert client.get(f"/api/v1/locations/{vehicle['id']}", headers=other_auth).json() == []
