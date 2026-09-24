@@ -5,6 +5,7 @@ from app.api.v1.analytics import router as analytics_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.companies import router as companies_router
 from app.api.v1.dvr import router as dvr_router
+from app.api.v1.devices import router as devices_router
 from app.api.v1.fleet import router as fleet_router
 from app.api.v1.geofences import router as geofences_router
 from app.api.v1.fuel import router as fuel_router
@@ -25,6 +26,7 @@ api_router.include_router(geofences_router)
 api_router.include_router(shipments_router)
 api_router.include_router(fuel_router)
 api_router.include_router(dvr_router)
+api_router.include_router(devices_router)
 api_router.include_router(invoices_router)
 api_router.include_router(integrations_router)
 api_router.include_router(locations_router)

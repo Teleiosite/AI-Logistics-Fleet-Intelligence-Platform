@@ -1,5 +1,6 @@
 pyproject.toml
 app/__init__.py
+app/integrations.py
 app/main.py
 app/seed.py
 app/ai/delay_prediction.py
@@ -13,8 +14,11 @@ app/api/v1/companies.py
 app/api/v1/dvr.py
 app/api/v1/fleet.py
 app/api/v1/fuel.py
+app/api/v1/geofences.py
 app/api/v1/health.py
+app/api/v1/integrations.py
 app/api/v1/invoices.py
+app/api/v1/locations.py
 app/api/v1/notifications.py
 app/api/v1/router.py
 app/api/v1/shipments.py
@@ -39,7 +43,9 @@ app/schemas/dvr.py
 app/schemas/fleet.py
 app/schemas/fuel.py
 app/schemas/fuel_price.py
+app/schemas/geofence.py
 app/schemas/invoice.py
+app/schemas/location.py
 app/schemas/shipment.py
 app/schemas/user.py
 app/services/__init__.py

@@ -63,6 +63,14 @@ export type ShipmentTimelineEntry = {
 
 export type Vehicle = { id: string; vehicle_number: string; license_plate: string; vehicle_type: string; status: string };
 export type Driver = { id: string; first_name: string; last_name: string; license_number: string; status: string };
+export type LocationPing = {
+  id: string;
+  vehicle_id: string;
+  latitude: number;
+  longitude: number;
+  speed_kph?: number | null;
+  recorded_at: string;
+};
 
 export type FuelLog = {
   id: string;
@@ -253,6 +261,10 @@ export async function fetchShipmentTimeline(token: string, shipmentId: string): 
 
 export async function fetchVehicles(token: string): Promise<Vehicle[]> {
   return apiFetch<Vehicle[]>("/vehicles", { headers: { Authorization: `Bearer ${token}` } });
+}
+
+export async function fetchLatestLocations(token: string): Promise<LocationPing[]> {
+  return apiFetch<LocationPing[]>("/locations/latest", { headers: { Authorization: "Bearer " + token } });
 }
 
 export async function fetchDrivers(token: string): Promise<Driver[]> {

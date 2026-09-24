@@ -35,3 +35,19 @@ jobs:
           context: ./backend
           push: true
           tags: ghcr.io/${{ github.repository }}/api:${{ inputs.image_tag }}
+      - name: Verify image health
+        run: |
+          docker run -d --rm --name fleetiq-smoke -p 8000:8000 \
+            -e ENVIRONMENT=staging \
+            ghcr.io/${{ github.repository }}/api:${{ inputs.image_tag }}
+          trap 'docker logs fleetiq-smoke || true; docker stop fleetiq-smoke || true' EXIT
+          for attempt in {1..30}; do
+            curl --fail --silent http://127.0.0.1:8000/api/v1/health && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Rollback guidance
+        if: failure()
+        run: |
+          echo "::error::Promotion failed. Re-deploy the last known-good immutable image tag."
+          echo "Rollback command: gh workflow run promote.yml -f environment=${{ inputs.environment }} -f image_tag=<known-good-tag>"

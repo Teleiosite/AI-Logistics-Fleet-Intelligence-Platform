@@ -26,6 +26,25 @@ def record_location(
     return LocationPingRead.model_validate(ping)
 
 
+@router.get("/latest", response_model=list[LocationPingRead])
+def latest_locations(
+    db: Session = Depends(get_db),
+    auth: AuthContext = Depends(require_permission("fleet", "read")),
+) -> list[LocationPingRead]:
+    """Return the newest telemetry point per company vehicle."""
+    rows = db.scalars(
+        select(VehicleLocationPing)
+        .where(VehicleLocationPing.company_id == auth.company_id)
+        .order_by(desc(VehicleLocationPing.recorded_at))
+    )
+    seen: set[str] = set()
+    latest: list[LocationPingRead] = []
+    for row in rows:
+        if row.vehicle_id not in seen:
+            seen.add(row.vehicle_id)
+            latest.append(LocationPingRead.model_validate(row))
+    return latest
+
 @router.get("/{vehicle_id}", response_model=list[LocationPingRead])
 def list_locations(
     vehicle_id: str,

@@ -54,6 +54,17 @@ class User(Base):
     company: Mapped[Company] = relationship(back_populates="users")
 
 
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    token: Mapped[str] = mapped_column(String(512), unique=True, nullable=False)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Vehicle(Base):
     __tablename__ = "vehicles"
 

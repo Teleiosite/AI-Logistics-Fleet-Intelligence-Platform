@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - run: pytest -q
+      - run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80 -q
 
   frontend:
     runs-on: ubuntu-latest

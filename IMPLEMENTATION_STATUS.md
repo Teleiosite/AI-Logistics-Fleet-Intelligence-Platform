@@ -28,7 +28,11 @@ This repository now contains a cross-stack production baseline aligned to the Fl
   - tenant-scoped vehicle location telemetry API
   - persistent geofence event history and tenant-scoped SSE event stream
   - constrained tenant-scoped analytics copilot with input limits and SQL rejection
+  - authenticated device-token registration foundation for mobile push delivery
+  - live telemetry snapshot in the frontend map view
   - automated backend/frontend CI workflow
+  - CI coverage gate and container health smoke test
+  - PostgreSQL backup script and disaster-recovery restore runbook
 
 ### Infrastructure and ops
 - PostgreSQL-first defaults in config and docker-compose.
