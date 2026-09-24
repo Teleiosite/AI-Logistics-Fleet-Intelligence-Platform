@@ -6,6 +6,7 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("fleetiq.request")
+_request_counts: dict[str, int] = {}
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
@@ -16,6 +17,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         duration_ms = round((time.perf_counter() - start) * 1000, 2)
 
         response.headers["x-request-id"] = request_id
+        key = f"{request.method} {request.url.path} {response.status_code}"
+        _request_counts[key] = _request_counts.get(key, 0) + 1
         logger.info(
             "request_completed",
             extra={
@@ -27,3 +30,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             },
         )
         return response
+
+
+def metrics_snapshot() -> dict[str, int]:
+    return dict(_request_counts)

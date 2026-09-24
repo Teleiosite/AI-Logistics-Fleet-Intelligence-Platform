@@ -9,6 +9,9 @@ class DVRCreate(BaseModel):
     variance_type: str
     description: str
     financial_impact: Decimal | None = None
+    fault_assignment: str | None = None
+    severity: str = "minor"
+    resolution_notes: str | None = None
 
 
 class DVRRead(DVRCreate):

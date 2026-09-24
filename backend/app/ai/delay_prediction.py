@@ -1,4 +1,7 @@
+from pathlib import Path
 from dataclasses import dataclass
+
+import joblib
 
 
 @dataclass
@@ -28,3 +31,28 @@ def heuristic_delay_prediction(data: DelayPredictionInput) -> DelayPredictionOut
     confidence = max(0.5, min(0.98, 0.5 + risk / 2))
     predicted_delay = int(risk * 120)
     return DelayPredictionOutput(will_delay=risk >= 0.55, confidence=round(confidence, 2), predicted_delay_minutes=predicted_delay)
+
+
+def predict_delay(data: DelayPredictionInput) -> DelayPredictionOutput:
+    """Use the trained model when present and retain a deterministic safe fallback."""
+    model_path = Path(__file__).with_name("delay_model.joblib")
+    if model_path.exists():
+        try:
+            model = joblib.load(model_path)
+            features = [[
+                data.distance_km,
+                data.cargo_weight_kg,
+                data.driver_on_time_rate,
+                data.route_traffic_score,
+                float(data.is_raining),
+            ]]
+            probabilities = model.predict_proba(features)[0]
+            delayed_probability = float(probabilities[1])
+            return DelayPredictionOutput(
+                will_delay=delayed_probability >= 0.5,
+                confidence=round(max(probabilities), 2),
+                predicted_delay_minutes=round(delayed_probability * 120),
+            )
+        except (OSError, ValueError, IndexError, AttributeError):
+            pass
+    return heuristic_delay_prediction(data)

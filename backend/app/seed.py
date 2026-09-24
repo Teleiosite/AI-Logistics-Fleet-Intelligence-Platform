@@ -16,11 +16,10 @@ from pathlib import Path
 # Allow running directly with `python app/seed.py` from the backend directory.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 
 from app.core.config import get_settings
 from app.core.security import hash_password
-from app.db.base import Base
 from app.db.session import SessionLocal, engine
 from app.models.entities import (
     Alert,
@@ -43,6 +42,22 @@ settings = get_settings()
 DEMO_COMPANY_SLUG = "acme-logistics"
 DEMO_USER_EMAIL = "admin@acme-logistics.demo"
 DEMO_PLAINTEXT_PASS = "FleetIQ2026!"
+REQUIRED_TABLES = {
+    "alerts",
+    "audit_logs",
+    "companies",
+    "delivery_variance_reports",
+    "drivers",
+    "fuel_issuance_logs",
+    "fuel_price_history",
+    "invoice_line_items",
+    "invoices",
+    "shipment_status_logs",
+    "shipments",
+    "transporters",
+    "users",
+    "vehicles",
+}
 
 
 def wait_for_db(max_retries: int = 20, delay: float = 2.0) -> None:
@@ -61,9 +76,19 @@ def wait_for_db(max_retries: int = 20, delay: float = 2.0) -> None:
             time.sleep(delay)
 
 
+def ensure_schema_ready() -> None:
+    existing_tables = set(inspect(engine).get_table_names())
+    missing_tables = sorted(REQUIRED_TABLES - existing_tables)
+    if missing_tables:
+        missing = ", ".join(missing_tables)
+        raise RuntimeError(
+            "Database schema is not initialized. Run `alembic upgrade head` before seeding. "
+            f"Missing tables: {missing}"
+        )
+
+
 def seed() -> None:
-    # Ensure tables exist (create_all is a no-op when tables already exist)
-    Base.metadata.create_all(bind=engine)
+    ensure_schema_ready()
 
     db = SessionLocal()
     try:

@@ -29,6 +29,12 @@ def create_access_token(subject: str, company_id: str, role: str) -> str:
     return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
 
 
+def create_refresh_token(subject: str, company_id: str, role: str) -> str:
+    expires = datetime.now(timezone.utc) + timedelta(days=7)
+    payload = {"sub": subject, "company_id": company_id, "role": role, "exp": expires, "type": "refresh"}
+    return jwt.encode(payload, settings.secret_key, algorithm=ALGORITHM)
+
+
 def decode_access_token(token: str) -> dict[str, str]:
     try:
         data = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
@@ -37,5 +43,18 @@ def decode_access_token(token: str) -> dict[str, str]:
 
     required_fields = {"sub", "company_id", "role"}
     if not required_fields.issubset(data):
+        raise InvalidTokenError("Token missing required claims")
+    return data
+
+
+def decode_refresh_token(token: str) -> dict[str, str]:
+    try:
+        data = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+    except JWTError as exc:
+        raise InvalidTokenError("Invalid or expired refresh token") from exc
+    if data.get("type") != "refresh":
+        raise InvalidTokenError("Not a refresh token")
+    required = {"sub", "company_id", "role"}
+    if not required.issubset(data):
         raise InvalidTokenError("Token missing required claims")
     return data

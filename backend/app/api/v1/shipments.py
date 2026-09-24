@@ -7,7 +7,7 @@ from app.core.dependencies import AuthContext, require_permission
 from app.db.session import get_db
 from app.models.entities import Shipment, ShipmentStatus, ShipmentStatusLog
 from app.schemas.shipment import ShipmentCreate, ShipmentPODUpdate, ShipmentRead, ShipmentStatusUpdate
-from app.services.crud import create_shipment, list_shipments
+from app.services.crud import create_shipment, list_shipments, recalculate_transporter_score
 
 router = APIRouter(prefix="/shipments", tags=["shipments"])
 
@@ -90,6 +90,8 @@ def update_status(
     db.add(log)
     db.add(shipment)
     db.commit()
+    if requested_status == ShipmentStatus.DELIVERED and shipment.transporter_id:
+        recalculate_transporter_score(db, shipment.transporter_id)
     db.refresh(shipment)
     return ShipmentRead.model_validate(shipment)
 

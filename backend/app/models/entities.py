@@ -54,6 +54,17 @@ class User(Base):
     company: Mapped[Company] = relationship(back_populates="users")
 
 
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    token: Mapped[str] = mapped_column(String(512), unique=True, nullable=False)
+    platform: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class Vehicle(Base):
     __tablename__ = "vehicles"
 
@@ -107,6 +118,13 @@ class Shipment(Base):
     proof_of_delivery_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     delivery_signature_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     has_variance: Mapped[bool] = mapped_column(Boolean, default=False)
+    priority: Mapped[str] = mapped_column(String(50), default="standard")
+    scheduled_pickup_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    scheduled_delivery_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cargo_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cargo_weight_kg: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    cargo_volume_m3: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    reference_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -135,6 +153,8 @@ class FuelIssuanceLog(Base):
     odometer_reading_km: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     is_anomaly: Mapped[bool] = mapped_column(Boolean, default=False)
     anomaly_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fuel_efficiency_lkm: Mapped[Decimal | None] = mapped_column(Numeric(8, 3), nullable=True)
+    station_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -149,6 +169,10 @@ class DeliveryVarianceReport(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     financial_impact: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="open")
+    fault_assignment: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    severity: Mapped[str] = mapped_column(String(50), default="minor")
+    resolution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -187,4 +211,63 @@ class Alert(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="active")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FuelPriceHistory(Base):
+    __tablename__ = "fuel_price_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    region: Mapped[str] = mapped_column(String(100), nullable=False)
+    fuel_type: Mapped[str] = mapped_column(String(50), default="diesel")
+    price_per_liter: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    company_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    user_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    resource: Mapped[str] = mapped_column(String(100), nullable=False)
+    resource_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class VehicleLocationPing(Base):
+    __tablename__ = "vehicle_location_pings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    vehicle_id: Mapped[str] = mapped_column(String(36), ForeignKey("vehicles.id"), nullable=False)
+    latitude: Mapped[Decimal] = mapped_column(Numeric(9, 6), nullable=False)
+    longitude: Mapped[Decimal] = mapped_column(Numeric(9, 6), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Geofence(Base):
+    __tablename__ = "geofences"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    latitude: Mapped[Decimal] = mapped_column(Numeric(9, 6), nullable=False)
+    longitude: Mapped[Decimal] = mapped_column(Numeric(9, 6), nullable=False)
+    radius_meters: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class GeofenceEvent(Base):
+    __tablename__ = "geofence_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    company_id: Mapped[str] = mapped_column(String(36), ForeignKey("companies.id"), nullable=False)
+    geofence_id: Mapped[str] = mapped_column(String(36), ForeignKey("geofences.id"), nullable=False)
+    vehicle_id: Mapped[str] = mapped_column(String(36), ForeignKey("vehicles.id"), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    distance_meters: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

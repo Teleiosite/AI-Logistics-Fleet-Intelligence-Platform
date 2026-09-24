@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "../lib/utils";
-
-const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
   title: "FleetIQ — AI Logistics & Fleet Intelligence",
@@ -20,7 +17,6 @@ export default function RootLayout({
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased text-foreground",
-          outfit.variable
         )}
       >
         {children}

@@ -8,7 +8,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-black text-foreground">
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
-        <Sidebar title="FleetIQ" />
+        <Sidebar />
       </div>
       
       <div className="md:pl-64 flex flex-col flex-1">
